@@ -1,0 +1,9 @@
+id,name,slug,image_url,parent_id,order,is_active
+550e8400-e29b-41d4-a716-446655440000,Elektronik,elektronik,,0,true
+550e8400-e29b-41d4-a716-446655440001,Telefon & Tablet,telefon-tablet,,550e8400-e29b-41d4-a716-446655440000,0,true
+550e8400-e29b-41d4-a716-446655440002,Bilgisayar & Laptop,bilgisayar-laptop,,550e8400-e29b-41d4-a716-446655440000,1,true
+550e8400-e29b-41d4-a716-446655440010,Giyim & Aksesuar,giyim-aksesuar,,1,true
+550e8400-e29b-41d4-a716-446655440011,Erkek Giyim,erkek-giyim,,550e8400-e29b-41d4-a716-446655440010,0,true
+550e8400-e29b-41d4-a716-446655440012,Kadın Giyim,kadin-giyim,,550e8400-e29b-41d4-a716-446655440010,1,true
+550e8400-e29b-41d4-a716-446655440020,Ev & Yaşam,ev-yasam,,2,true
+550e8400-e29b-41d4-a716-446655440030,Spor & Outdoor,spor-outdoor,,3,true

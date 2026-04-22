@@ -1,0 +1,3 @@
+id,user_id,category_id,title,description,condition,status,view_count,city,district,estimated_value,created_at,updated_at
+i1,d290f1ee-6c54-4b01-90e6-d701748f0852,550e8400-e29b-41d4-a716-446655440001,iPhone 13 Pro 128GB,Çok temiz kullanıldı, kutusu faturası mevcut.,LIKE_NEW,ACTIVE,15,İstanbul,Beşiktaş,25000,2024-04-01T10:00:00Z,2024-04-01T10:00:00Z
+i2,d290f1ee-6c54-4b01-90e6-d701748f0852,550e8400-e29b-41d4-a716-446655440020,Oyuncu Koltuğu,Az kullanılmış yırtığı yok.,GOOD,ACTIVE,8,Ankara,Keçiören,4500,2024-04-02T12:00:00Z,2024-04-02T12:00:00Z

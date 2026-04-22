@@ -1,0 +1,3 @@
+id,trade_id,item_id,side
+ti1,t1,i1,OFFERED
+ti2,t1,i2,REQUESTED

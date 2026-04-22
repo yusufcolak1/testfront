@@ -1,5 +1,19 @@
+# Global
 node_modules/
 dist/
 .env
 .DS_Store
 *.log
+
+# Server Specific
+server/node_modules/
+server/dist/
+server/.env
+server/uploads/
+server/logs/
+server/package-lock.json
+
+# Frontend Specific (if applicable)
+react-app/node_modules/
+react-app/dist/
+react-app/.env

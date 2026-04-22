@@ -1,0 +1,2 @@
+id,trade_id,item_id,buyer_id,seller_id,is_active,created_at
+cr1,t1,i2,d290f1ee-6c54-4b01-90e6-d701748f0852,d290f1ee-6c54-4b01-90e6-d701748f0851,true,2024-04-05T14:05:00Z
