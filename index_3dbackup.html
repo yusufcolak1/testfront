@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Premium 3D Transition Demo</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #050505;
+      font-family: 'Inter', sans-serif;
+      color: white;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2rem 3rem;
+      border-radius: 1rem;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      transform: translateY(-20vh);
+      opacity: 0;
+      animation: fadeUp 1s ease-out forwards;
+      animation-delay: 1s;
+    }
+    h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #ffffff, #888888);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -1px;
+    }
+    p {
+      margin-top: 0.5rem;
+      color: #aaaaaa;
+      font-size: 1.1rem;
+    }
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.2rem;
+      color: #fff;
+      z-index: 10;
+      transition: opacity 0.5s ease;
+    }
+    .action-btn {
+      margin-top: 1.5rem;
+      padding: 0.8rem 2rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 136, 0, 0.8), rgba(255, 68, 0, 0.8));
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 2rem;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: all 0.3s ease;
+      box-shadow: 0 10px 20px -5px rgba(255, 100, 0, 0.4);
+    }
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 25px -5px rgba(255, 100, 0, 0.6);
+      background: linear-gradient(135deg, rgba(255, 150, 30, 0.9), rgba(255, 80, 20, 0.9));
+    }
+    .action-btn:active {
+      transform: translateY(1px);
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(-18vh); }
+      to { opacity: 1; transform: translateY(-20vh); }
+    }
+  </style>
+  
+  <!-- Import maps polyfill -->
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="loading" id="loader">Yükleniyor... Yüksek Kalite 3D Model Hazırlanıyor</div>
+  <div id="canvas-container"></div>
+  <div id="ui-layer">
+    <div class="glass-panel">
+      <h1>TakasOn Premium</h1>
+      <p>Kusursuz Geçiş Teknolojisi</p>
+      <button id="trade-btn" class="action-btn">TAKAS YAP</button>
+    </div>
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

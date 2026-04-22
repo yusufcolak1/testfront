@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+/* TAKASON PREMIUM SCROLLBAR - STONE & AMBER THEME */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f5f1ed;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #b0a498;
+    border: 4px solid #f5f1ed;
+    border-radius: 99px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #78716c;
+}
+
+/* Firefox Support */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #b0a498 #f5f1ed;
+}
+
+@theme {
+    /* Pure Sade Palette - Inspired by the User's Screenshot */
+    --color-bg: #f5f1ed;
+    --color-surface: #fbfaf8;
+    --color-text-main: #3d342e;
+    --color-text-muted: #8c837d;
+    --color-accent: #9c8e7c;
+    --color-border: #e9e5e1;
+
+    /* REPLACING AMBER/YELLOW WITH CREAM (#FFF8E7) */
+    --color-amber-50: #FFF8E7;
+    --color-amber-100: #FFF8E7;
+    --color-amber-200: #FFF8E7;
+    --color-amber-300: #FFF8E7;
+    --color-amber-400: #FFF8E7;
+    --color-amber-500: #FFF8E7;
+    --color-amber-600: #FFF8E7;
+    --color-amber-700: #FFF8E7;
+    --color-amber-800: #FFF8E7;
+    --color-amber-900: #FFF8E7;
+
+    --color-yellow-50: #FFF8E7;
+    --color-yellow-100: #FFF8E7;
+    --color-yellow-200: #FFF8E7;
+    --color-yellow-300: #FFF8E7;
+    --color-yellow-400: #FFF8E7;
+    --color-yellow-500: #FFF8E7;
+    --color-yellow-600: #FFF8E7;
+    --color-yellow-700: #FFF8E7;
+    --color-yellow-800: #FFF8E7;
+    --color-yellow-900: #FFF8E7;
+
+    --font-heading: "Lora", serif;
+    --font-body: "Inter", sans-serif;
+
+    /* Clean Shadows */
+    --shadow-sm: 0 1px 4px rgba(61, 52, 46, 0.02);
+    --shadow-md: 0 8px 24px rgba(61, 52, 46, 0.05);
+    --shadow-lg: 0 20px 48px rgba(61, 52, 46, 0.08);
+}
+
+@layer base {
+    * {
+        @apply border-stone-200/50;
+    }
+
+    ::selection {
+        background-color: #FFF8E7;
+        color: #3d342e;
+    }
+
+    html,
+    body {
+        @apply bg-[#f5f1ed] text-[var(--color-text-main)] font-[var(--font-body)] antialiased overflow-x-hidden w-full;
+        background-color: #f5f1ed !important;
+        background-image: none !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-[var(--font-heading)] font-medium tracking-tight;
+    }
+}
+
+@layer components {
+
+    /* Generic Container */
+    .glass-panel {
+        @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-lg rounded-2xl;
+    }
+
+    /* Modern Buttons */
+    .btn-modern {
+        @apply px-6 py-2.5 rounded-xl font-medium transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+    }
+
+    .btn-primary {
+        @apply px-6 py-2.5 rounded-xl font-medium transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none bg-indigo-600 text-white shadow-md shadow-indigo-500/20 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/30;
+    }
+
+    .btn-secondary {
+        @apply px-6 py-2.5 rounded-xl font-medium transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 hover:border-stone-300;
+    }
+
+    /* Modern Card */
+    .card-modern {
+        @apply bg-white border border-stone-100 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+    }
+
+    /* Transition Optimizations */
+    #ui-container {
+        @apply transition-opacity duration-1000;
+        will-change: opacity;
+    }
+
+    /* Header Styling */
+    .header-modern {
+        @apply fixed top-0 left-0 w-full z-50 bg-[#f5f1ed]/90 backdrop-blur-xl border-b border-stone-200/60 transition-all duration-300 shadow-xl shadow-stone-900/5;
+    }
+}
+
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .animate-float {
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    /* NEW ANIMATIONS FOR DISCOVER PAGE */
+    .animate-scroll-hint {
+        animation: scrollHint 2s ease-in-out forwards;
+    }
+
+    @keyframes scrollHint {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        30% {
+            transform: translateY(-80px);
+        }
+
+        60% {
+            transform: translateY(-60px);
+        }
+    }
+
+    .animate-float-arrow {
+        animation: floatArrow 1.5s ease-in-out infinite;
+    }
+
+    @keyframes floatArrow {
+
+        0%,
+        100% {
+            transform: translateY(0);
+            opacity: 0.5;
+        }
+
+        50% {
+            transform: translateY(10px);
+            opacity: 1;
+        }
+    }
+}
