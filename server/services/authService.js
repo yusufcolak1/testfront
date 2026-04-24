@@ -155,6 +155,26 @@ const getMe = async (userId) => {
     throw new AppError('Kullanıcı bulunamadı.', 404);
   }
 
+  // Format response
+  const user = {
+    id: userData.id,
+    email: userData.email,
+    role: userData.role,
+    status: userData.status,
+    createdAt: userData.createdAt,
+    profile: {
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      phone: userData.phone,
+      city: userData.city,
+      district: userData.district,
+      avatarUrl: userData.avatarUrl,
+      trustScore: userData.trustScore,
+      bio: userData.bio,
+      premiumUntil: userData.premiumUntil
+    }
+  };
+
   return user;
 };
 
