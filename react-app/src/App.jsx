@@ -183,9 +183,9 @@ function App() {
                 { name: 'Ana Sayfa', path: '/', icon: HomeIcon },
                 { name: 'Keşfet', path: '/kesfet', icon: Compass },
                 { name: 'İlan Ver', path: '/ilan-ver', icon: PlusCircle },
-                { name: 'Mesajlar', path: '/mesajlar', icon: MessageCircle },
+                { name: 'Mesajlar', path: '/mesajlar', icon: MessageCircle, requireAuth: true },
                 { name: 'Favorilerim', path: '/favoriler', icon: Heart }
-              ].map((item) => (
+              ].filter(item => !item.requireAuth || isAuthenticated).map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
