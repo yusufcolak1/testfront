@@ -12,7 +12,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 
 const app = require('./app');
-const initializeSocket = require('./socket');
+const { initializeSocket } = require('./services/socketService');
 const { pool } = require('./config/database');
 const corsOptions = require('./config/cors');
 
@@ -76,7 +76,7 @@ const gracefulShutdown = async (signal) => {
   console.log(`\n📴 ${signal} sinyali alındı. Sunucu kapatılıyor...`);
 
   httpServer.close(async () => {
-    await prisma.$disconnect();
+    await pool.end();
     console.log('✅ Veritabanı bağlantısı kapatıldı.');
     console.log('✅ Sunucu temiz şekilde kapatıldı.');
     process.exit(0);
