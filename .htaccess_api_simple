@@ -1,0 +1,10 @@
+RewriteEngine On
+
+# Proxy tüm istekleri localhost:8080'e yönlendir
+RewriteRule ^(.*)$ http://localhost:8080/$1 [P,L]
+
+# CORS Headers
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+Header always set Access-Control-Allow-Credentials "true"

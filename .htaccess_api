@@ -1,0 +1,16 @@
+PassengerEnabled on
+PassengerAppRoot /home/u446324760/takason/server
+PassengerAppType node
+PassengerStartupFile server.js
+PassengerNodejs /opt/alt/alt-nodejs22/root/usr/bin/node
+
+# CORS Headers
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+Header always set Access-Control-Allow-Credentials "true"
+
+# Handle OPTIONS
+RewriteEngine On
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]
