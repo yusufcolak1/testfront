@@ -4,7 +4,7 @@
 // ============================================================
 
 const bcrypt = require('bcryptjs');
-const prisma = require('../config/database');
+const { query, transaction } = require('../config/database');
 const { generateTokenPair, verifyRefreshToken } = require('../utils/jwt');
 const { AppError } = require('../middlewares/errorHandler');
 
@@ -15,8 +15,8 @@ const SALT_ROUNDS = 12; // Bcrypt güvenlik seviyesi (üretim için 12 ideal)
 // ============================================================
 const register = async ({ email, password, firstName, lastName }) => {
   // E-posta zaten kayıtlı mı?
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
+  const existingUserResult = await query('SELECT id FROM "User" WHERE email = $1', [email]);
+  if (existingUserResult.rows.length > 0) {
     throw new AppError('Bu e-posta adresi zaten kayıtlı.', 409);
   }
 
@@ -24,34 +24,26 @@ const register = async ({ email, password, firstName, lastName }) => {
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
   // Kullanıcı ve profili transaction içinde oluştur (atomik işlem)
-  const user = await prisma.$transaction(async (tx) => {
-    const newUser = await tx.user.create({
-      data: {
-        email,
-        passwordHash,
-        // Profil aynı anda oluşturuluyor (nested write)
-        profile: {
-          create: {
-            firstName,
-            lastName,
-          },
-        },
-      },
-      // Dönen veride şifreyi gizle
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        profile: {
-          select: {
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
+  const user = await transaction(async (client) => {
+    // Kullanıcı oluştur
+    const userResult = await client.query(
+      `INSERT INTO "User" (id, email, "passwordHash", role, status, "createdAt", "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, 'USER', 'ACTIVE', NOW(), NOW())
+       RETURNING id, email, role, "createdAt"`,
+      [email, passwordHash]
+    );
+    
+    const newUser = userResult.rows[0];
 
+    // Profil oluştur
+    const profileResult = await client.query(
+      `INSERT INTO "Profile" (id, "userId", "firstName", "lastName", "createdAt", "updatedAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW())
+       RETURNING "firstName", "lastName"`,
+      [newUser.id, firstName, lastName]
+    );
+
+    newUser.profile = profileResult.rows[0];
     return newUser;
   });
 
@@ -65,24 +57,20 @@ const register = async ({ email, password, firstName, lastName }) => {
 // Giriş Yap
 // ============================================================
 const login = async ({ email, password }) => {
-  // Kullanıcıyı bul (şifre hash'i de getir - normalde select'te gelmez)
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: {
-      id: true,
-      email: true,
-      passwordHash: true,
-      role: true,
-      status: true,
-      profile: {
-        select: { firstName: true, lastName: true, avatarUrl: true },
-      },
-    },
-  });
+  // Kullanıcıyı bul (şifre hash'i de getir)
+  const userResult = await query(
+    `SELECT u.id, u.email, u."passwordHash", u.role, u.status,
+            p."firstName", p."lastName", p."avatarUrl"
+     FROM "User" u
+     LEFT JOIN "Profile" p ON u.id = p."userId"
+     WHERE u.email = $1`,
+    [email]
+  );
 
-  // Kullanıcı yok veya şifre yanlış - Timing attack'ı önlemek için her ikisi de bcrypt ile karşılaştırılır
+  const user = userResult.rows[0];
+
+  // Kullanıcı yok - Timing attack'ı önlemek için bcrypt ile karşılaştır
   if (!user) {
-    // Hash karşılaştırması yap (timing attack önlemi)
     await bcrypt.compare(password, '$2b$12$invalidhashtopreventtimingattack');
     throw new AppError('E-posta adresi veya şifre hatalı.', 401);
   }
@@ -101,8 +89,18 @@ const login = async ({ email, password }) => {
     throw new AppError('E-posta adresi veya şifre hatalı.', 401);
   }
 
-  // Hassas veriyi çıkar
-  const { passwordHash, ...safeUser } = user;
+  // Profil bilgilerini düzenle
+  const safeUser = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    profile: {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatarUrl: user.avatarUrl
+    }
+  };
 
   // Token çifti üret
   const tokens = generateTokenPair(user.id, user.role);
@@ -122,10 +120,12 @@ const refreshTokens = async (refreshToken) => {
   }
 
   // Kullanıcı hâlâ aktif mi?
-  const user = await prisma.user.findUnique({
-    where: { id: decoded.userId },
-    select: { id: true, role: true, status: true },
-  });
+  const userResult = await query(
+    'SELECT id, role, status FROM "User" WHERE id = $1',
+    [decoded.userId]
+  );
+
+  const user = userResult.rows[0];
 
   if (!user || user.status !== 'ACTIVE') {
     throw new AppError('Kullanıcı bulunamadı veya hesap aktif değil.', 401);
@@ -139,31 +139,19 @@ const refreshTokens = async (refreshToken) => {
 // Mevcut Kullanıcı Bilgisi
 // ============================================================
 const getMe = async (userId) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      email: true,
-      role: true,
-      status: true,
-      createdAt: true,
-      profile: {
-        select: {
-          firstName: true,
-          lastName: true,
-          phone: true,
-          city: true,
-          district: true,
-          avatarUrl: true,
-          trustScore: true,
-          bio: true,
-          premiumUntil: true,
-        },
-      },
-    },
-  });
+  const userResult = await query(
+    `SELECT u.id, u.email, u.role, u.status, u."createdAt",
+            p."firstName", p."lastName", p.phone, p.city, p.district,
+            p."avatarUrl", p."trustScore", p.bio, p."premiumUntil"
+     FROM "User" u
+     LEFT JOIN "Profile" p ON u.id = p."userId"
+     WHERE u.id = $1`,
+    [userId]
+  );
 
-  if (!user) {
+  const userData = userResult.rows[0];
+
+  if (!userData) {
     throw new AppError('Kullanıcı bulunamadı.', 404);
   }
 

@@ -6,12 +6,14 @@
 
 require('dotenv').config();
 
+const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const cors = require('cors');
 
 const app = require('./app');
-const prisma = require('./config/database');
-const { initializeSocket } = require('./services/socketService');
+const initializeSocket = require('./socket');
+const { pool } = require('./config/database');
 const corsOptions = require('./config/cors');
 
 const PORT = process.env.PORT || 5000;

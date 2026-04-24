@@ -1,0 +1,26 @@
+RewriteEngine On
+
+# API Proxy - Backend'e yönlendir
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^api/(.*)$ http://localhost:5000/api/$1 [P,L]
+
+# Socket.io Proxy
+RewriteCond %{REQUEST_URI} ^/socket.io/
+RewriteRule ^socket.io/(.*)$ http://localhost:5000/socket.io/$1 [P,L]
+
+# React Router - Tüm istekleri index.html'e yönlendir
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Gzip Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
