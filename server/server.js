@@ -43,8 +43,7 @@ app.set('io', io);
 // ============================================================
 const startServer = async () => {
   try {
-    // Prisma bağlantısını test et
-    await prisma.$connect();
+    // PostgreSQL bağlantısı database.js'de otomatik yapılıyor
     console.log('✅ PostgreSQL veritabanına bağlanıldı.');
 
     // Sunucuyu dinlemeye başla
