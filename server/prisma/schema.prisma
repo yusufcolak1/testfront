@@ -1,255 +1,243 @@
-// ============================================================
-// TAKASON - Prisma Veritabanı Şeması
-// PostgreSQL + Prisma ORM
-// Üretim kalitesi - 100.000 aktif kullanıcıya ölçeklenebilir
-// ============================================================
+// PRODUCTION SCHEMA - PostgreSQL ile kullanım için
+// Bu dosyayı production'da schema.prisma olarak kopyalayın
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// ============================================================
-// 1. KULLANICI YÖNETİMİ
-// ============================================================
+// ============================================
+// ENUMS
+// ============================================
 
-// Kimlik doğrulama verilerini tutar (login yükünü hafifletmek için profil ayrı tabloda)
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  SUSPENDED
+}
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ItemStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  ARCHIVED
+}
+
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum TradeSide {
+  OFFER
+  REQUEST
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+}
+
+// ============================================
+// MODELS
+// ============================================
+
 model User {
-  id           String      @id @default(uuid())
-  email        String      @unique
-  passwordHash String      @map("password_hash")
-  role         String      @default("USER")
-  status       String      @default("ACTIVE")
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(USER)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  // İlişkiler
-  profile         UserProfile?
-  items           Item[]
-  initiatedTrades Trade[]      @relation("TradeInitiator")
-  receivedTrades  Trade[]      @relation("TradeReceiver")
-  sentMessages    Message[]    @relation("MessageSender")
-  chatRoomsAsBuyer   ChatRoom[] @relation("ChatBuyer")
-  chatRoomsAsSeller  ChatRoom[] @relation("ChatSeller")
-  favorites       Favorite[]
+  profile      Profile?
+  items        Item[]
+  sentTrades   Trade[]       @relation("SentTrades")
+  receivedTrades Trade[]     @relation("ReceivedTrades")
+  chatRooms    ChatRoom[]
+  messages     Message[]
+  favorites    Favorite[]
 
   @@map("users")
 }
 
-// UserRole: USER, ADMIN, MODERATOR
-// UserStatus: ACTIVE, BANNED, SUSPENDED
-
-// Kullanıcı profil verileri - sorgularda lazım olmadıkça JOIN yapılmaz
-model UserProfile {
+model Profile {
   id          String   @id @default(uuid())
   userId      String   @unique @map("user_id")
   firstName   String   @map("first_name")
   lastName    String   @map("last_name")
   phone       String?
+  address     String?
   city        String?
-  district    String?
-  avatarUrl   String?  @map("avatar_url")
-  trustScore  Float    @default(0) @map("trust_score")
+  country     String?  @default("Turkey")
   bio         String?
-  premiumUntil DateTime? @map("premium_until")
+  avatarUrl   String?  @map("avatar_url")
+  rating      Float    @default(0.0)
+  totalTrades Int      @default(0) @map("total_trades")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // İlişkiler
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("user_profiles")
+  @@map("profiles")
 }
 
-// ============================================================
-// 2. KATEGORİ YÖNETİMİ (Alt kategori destekli - Self Relation)
-// ============================================================
-
 model Category {
-  id       String  @id @default(uuid())
-  name     String
-  slug     String  @unique
-  imageUrl String? @map("image_url")
-  parentId String? @map("parent_id")
-  order    Int     @default(0)
-  isActive Boolean @default(true) @map("is_active")
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  parentId    String?  @map("parent_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // Self-relation: alt kategoriler için (Elektronik -> Telefon -> iPhone)
-  parent   Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryChildren")
-
-  // İlişkiler
-  items Item[]
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  items       Item[]
 
   @@map("categories")
 }
 
-// ============================================================
-// 3. İLAN YÖNETİMİ
-// ============================================================
-
 model Item {
-  id          String      @id @default(uuid())
-  userId      String      @map("user_id")
-  categoryId  String      @map("category_id")
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  categoryId  String        @map("category_id")
   title       String
   description String
-  condition   String
-  status      String      @default("ACTIVE")
-  viewCount   Int         @default(0) @map("view_count")
-  city        String?
-  district    String?
-  // Tahmini değer - takas tekliflerinde kullanılır
-  estimatedValue Float?   @map("estimated_value")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  condition   ItemCondition
+  status      ItemStatus    @default(DRAFT)
+  location    String?
+  estimatedValue Float?     @map("estimated_value")
+  viewCount   Int           @default(0) @map("view_count")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  // İlişkiler
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category   Category    @relation(fields: [categoryId], references: [id])
-  images     ItemImage[]
-  tradeItems TradeItem[]
-  favorites  Favorite[]
-  chatRooms  ChatRoom[]
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category      @relation(fields: [categoryId], references: [id])
+  images      ItemImage[]
+  tradeItems  TradeItem[]
+  favorites   Favorite[]
 
-  // Performans indeksleri
   @@index([userId])
   @@index([categoryId])
   @@index([status])
-  @@index([createdAt(sort: Desc)])
   @@map("items")
 }
 
-// ItemCondition: NEW, LIKE_NEW, GOOD, FAIR, POOR
-// ItemStatus: ACTIVE, IN_TRADE, COMPLETED, PASSIVE, DELETED
-
-// Bir ilanın birden fazla görseli - display_order ile sıralı
 model ItemImage {
-  id           String  @id @default(uuid())
-  itemId       String  @map("item_id")
-  imageUrl     String  @map("image_url")
-  displayOrder Int     @default(0) @map("display_order")
-  isPrimary    Boolean @default(false) @map("is_primary")
+  id           String   @id @default(uuid())
+  itemId       String   @map("item_id")
+  imageUrl     String   @map("image_url")
+  displayOrder Int      @default(0) @map("display_order")
+  isPrimary    Boolean  @default(false) @map("is_primary")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  // İlişkiler
   item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([itemId])
   @@map("item_images")
 }
 
-// ============================================================
-// 4. GELİŞMİŞ TAKAS MOTORU
-// Çoklu ürün takasını destekler: 3 ürün + para karşılığı 1 ürün
-// ============================================================
-
 model Trade {
   id          String      @id @default(uuid())
-  initiatorId String      @map("initiator_id")  // Teklif veren kullanıcı
-  receiverId  String      @map("receiver_id")   // Teklif alan kullanıcı
-  cashOffer   Float?      @map("cash_offer")    // Üste teklif edilen para (opsiyonel)
-  status      String      @default("PENDING")
-  note        String?                           // Teklif notu
+  senderId    String      @map("sender_id")
+  receiverId  String      @map("receiver_id")
+  status      TradeStatus @default(PENDING)
+  message     String?
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
-  // İlişkiler
-  initiator  User        @relation("TradeInitiator", fields: [initiatorId], references: [id])
-  receiver   User        @relation("TradeReceiver", fields: [receiverId], references: [id])
-  tradeItems TradeItem[]
-  chatRoom   ChatRoom?
+  sender      User        @relation("SentTrades", fields: [senderId], references: [id])
+  receiver    User        @relation("ReceivedTrades", fields: [receiverId], references: [id])
+  tradeItems  TradeItem[]
 
-  @@index([initiatorId])
+  @@index([senderId])
   @@index([receiverId])
   @@index([status])
   @@map("trades")
 }
 
-// TradeStatus: PENDING, ACCEPTED, REJECTED, COMPLETED, CANCELLED, EXPIRED
-
-// Takastaki her bir ürünü tutar
-// side: OFFERED = teklif verenin ürünü, REQUESTED = teklif alanın ürünü
 model TradeItem {
-  id      String    @id @default(uuid())
-  tradeId String    @map("trade_id")
-  itemId  String    @map("item_id")
-  side    String
+  id        String    @id @default(uuid())
+  tradeId   String    @map("trade_id")
+  itemId    String    @map("item_id")
+  side      TradeSide
+  createdAt DateTime  @default(now()) @map("created_at")
 
-  // İlişkiler
   trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
   item  Item  @relation(fields: [itemId], references: [id])
 
-  @@unique([tradeId, itemId]) // Aynı ürün aynı takasta iki kez olamaz
+  @@unique([tradeId, itemId])
   @@index([tradeId])
+  @@index([itemId])
   @@map("trade_items")
 }
 
-// TradeSide: OFFERED, REQUESTED
-
-// ============================================================
-// 5. MESAJLAŞMA ALTYAPI (Chat)
-// Oda tabanlı mesajlaşma - hem ilan bazlı hem takas bazlı
-// ============================================================
-
 model ChatRoom {
-  id        String   @id @default(uuid())
-  tradeId   String?  @unique @map("trade_id") // Takas bazlı oda (opsiyonel)
-  itemId    String?  @map("item_id")           // İlan bazlı oda (opsiyonel)
-  buyerId   String   @map("buyer_id")
-  sellerId  String   @map("seller_id")
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
+  id        String    @id @default(uuid())
+  userIds   String[]  @map("user_ids")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
-  // İlişkiler
-  trade    Trade?    @relation(fields: [tradeId], references: [id])
-  item     Item?     @relation(fields: [itemId], references: [id])
-  buyer    User      @relation("ChatBuyer", fields: [buyerId], references: [id])
-  seller   User      @relation("ChatSeller", fields: [sellerId], references: [id])
+  users    User[]
   messages Message[]
 
-  @@index([buyerId])
-  @@index([sellerId])
   @@map("chat_rooms")
 }
 
 model Message {
-  id        String      @id @default(uuid())
-  roomId    String      @map("room_id")
-  senderId  String      @map("sender_id")
-  content   String
-  type      String      @default("TEXT")
-  isRead    Boolean     @default(false) @map("is_read")
-  createdAt DateTime    @default(now()) @map("created_at")
+  id         String      @id @default(uuid())
+  chatRoomId String      @map("chat_room_id")
+  senderId   String      @map("sender_id")
+  content    String
+  type       MessageType @default(TEXT)
+  isRead     Boolean     @default(false) @map("is_read")
+  createdAt  DateTime    @default(now()) @map("created_at")
 
-  // İlişkiler
-  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  sender User     @relation("MessageSender", fields: [senderId], references: [id])
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  sender   User     @relation(fields: [senderId], references: [id])
 
-  @@index([roomId])
+  @@index([chatRoomId])
   @@index([senderId])
   @@map("messages")
 }
 
-// MessageType: TEXT, IMAGE, SYSTEM_ALERT
-
-// ============================================================
-// 6. FAVORİLER
-// ============================================================
-
 model Favorite {
+  id        String   @id @default(uuid())
   userId    String   @map("user_id")
   itemId    String   @map("item_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  // İlişkiler
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  @@id([userId, itemId]) // Bileşik birincil anahtar - aynı ilan iki kez favorilenemez
+  @@unique([userId, itemId])
+  @@index([userId])
+  @@index([itemId])
   @@map("favorites")
 }

@@ -140,8 +140,7 @@ model Item {
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   category    Category      @relation(fields: [categoryId], references: [id])
   images      ItemImage[]
-  sentTrades  TradeItem[]   @relation("OfferedItems")
-  receivedTrades TradeItem[] @relation("RequestedItems")
+  tradeItems  TradeItem[]
   favorites   Favorite[]
 
   @@index([userId])
@@ -191,8 +190,9 @@ model TradeItem {
   createdAt DateTime  @default(now()) @map("created_at")
 
   trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  item  Item  @relation(side == OFFER ? "OfferedItems" : "RequestedItems", fields: [itemId], references: [id])
+  item  Item  @relation(fields: [itemId], references: [id])
 
+  @@unique([tradeId, itemId])
   @@index([tradeId])
   @@index([itemId])
   @@map("trade_items")
