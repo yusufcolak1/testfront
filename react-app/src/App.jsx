@@ -286,9 +286,9 @@ function App() {
             { name: 'Ana', path: '/', icon: HomeIcon },
             { name: 'Keşfet', path: '/kesfet', icon: Compass },
             { name: 'İlan Ver', path: '/ilan-ver', icon: PlusCircle, special: true },
-            { name: 'Mesaj', path: '/mesajlar', icon: MessageCircle },
+            { name: 'Mesaj', path: '/mesajlar', icon: MessageCircle, requireAuth: true },
             { name: 'Favoriler', path: '/favoriler', icon: Heart }
-          ].map((item) => {
+          ].filter(item => !item.requireAuth || isAuthenticated).map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
 
