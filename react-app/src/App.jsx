@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import IntroCanvas from './components/IntroCanvas';
-import { Coins, Crown, Star, Search, Activity, Smartphone, Sofa, Shirt, BookOpen, Music, Bike, Watch, Gamepad2, Box, ArrowRight, Award, Home as HomeIcon, Compass, PlusCircle, MessageCircle, Heart, X } from 'lucide-react';
+import LoginModal from './components/LoginModal';
+import { Coins, Crown, Star, Search, Activity, Smartphone, Sofa, Shirt, BookOpen, Music, Bike, Watch, Gamepad2, Box, ArrowRight, Award, Home as HomeIcon, Compass, PlusCircle, MessageCircle, Heart, X, User, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
 import Home from './pages/Home';
 import Favorites from './pages/Favorites';
 import CreateAd from './pages/CreateAd';
@@ -43,6 +45,8 @@ function App() {
 
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   const [activeLeaderNavBar, setActiveLeaderNavBar] = useState(0);
 
@@ -221,12 +225,35 @@ function App() {
                 ))}
               </div>
 
-              <Link to="/profil" className="group shrink-0">
-                <div className="flex items-center gap-1 md:gap-3 bg-white border border-stone-200 pl-1 md:pl-4 pr-1 py-1 rounded-full hover:bg-stone-50 hover:border-stone-400 hover:shadow-lg transition-all group-active:scale-95 shadow-sm">
-                  <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest hidden md:block group-hover:text-stone-900 transition-colors">emre</span>
-                  <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-stone-900 flex items-center justify-center text-xs font-black text-[#FFF8E7] border border-stone-800 shadow-md">E</div>
+              {isAuthenticated ? (
+                <div className="relative group shrink-0">
+                  <Link to="/profil" className="block">
+                    <div className="flex items-center gap-1 md:gap-3 bg-white border border-stone-200 pl-1 md:pl-4 pr-1 py-1 rounded-full hover:bg-stone-50 hover:border-stone-400 hover:shadow-lg transition-all group-active:scale-95 shadow-sm">
+                      <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest hidden md:block group-hover:text-stone-900 transition-colors">
+                        {user?.profile?.firstName || 'Kullanıcı'}
+                      </span>
+                      <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-stone-900 flex items-center justify-center text-xs font-black text-[#FFF8E7] border border-stone-800 shadow-md">
+                        {(user?.profile?.firstName?.[0] || 'K').toUpperCase()}
+                      </div>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="absolute top-full right-0 mt-2 px-4 py-2 bg-white border border-stone-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex items-center gap-2 text-sm hover:bg-stone-50"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Çıkış Yap
+                  </button>
                 </div>
-              </Link>
+              ) : (
+                <button
+                  onClick={() => setIsLoginModalOpen(true)}
+                  className="flex items-center gap-2 bg-stone-900 text-white px-4 py-2 rounded-full hover:bg-stone-800 transition-all shadow-md hover:shadow-lg active:scale-95"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="text-xs font-bold hidden md:block">Giriş Yap</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -323,6 +350,11 @@ function App() {
           </Routes>
         </main>
         <Footer />
+        
+        <LoginModal 
+          isOpen={isLoginModalOpen} 
+          onClose={() => setIsLoginModalOpen(false)} 
+        />
       </div>
     </>
   );

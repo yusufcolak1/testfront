@@ -1,6 +1,6 @@
 // ============================================================
-// TAKASON - Prisma Veritabanı Şeması
-// PostgreSQL + Prisma ORM
+// TAKASON - Prisma Veritabanı Şeması (MySQL)
+// MySQL + Prisma ORM
 // Üretim kalitesi - 100.000 aktif kullanıcıya ölçeklenebilir
 // ============================================================
 
@@ -9,8 +9,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================================
@@ -21,9 +21,9 @@ datasource db {
 model User {
   id           String      @id @default(uuid())
   email        String      @unique
-  passwordHash String      @map("password_hash")
-  role         String      @default("USER")
-  status       String      @default("ACTIVE")
+  passwordHash String      @map("password_hash") @db.VarChar(255)
+  role         String      @default("USER") @db.VarChar(50)
+  status       String      @default("ACTIVE") @db.VarChar(50)
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
 
@@ -47,14 +47,14 @@ model User {
 model UserProfile {
   id          String   @id @default(uuid())
   userId      String   @unique @map("user_id")
-  firstName   String   @map("first_name")
-  lastName    String   @map("last_name")
-  phone       String?
-  city        String?
-  district    String?
-  avatarUrl   String?  @map("avatar_url")
+  firstName   String   @map("first_name") @db.VarChar(100)
+  lastName    String   @map("last_name") @db.VarChar(100)
+  phone       String?  @db.VarChar(20)
+  city        String?  @db.VarChar(100)
+  district    String?  @db.VarChar(100)
+  avatarUrl   String?  @map("avatar_url") @db.VarChar(500)
   trustScore  Float    @default(0) @map("trust_score")
-  bio         String?
+  bio         String?  @db.Text
   premiumUntil DateTime? @map("premium_until")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -71,9 +71,9 @@ model UserProfile {
 
 model Category {
   id       String  @id @default(uuid())
-  name     String
-  slug     String  @unique
-  imageUrl String? @map("image_url")
+  name     String  @db.VarChar(100)
+  slug     String  @unique @db.VarChar(150)
+  imageUrl String? @map("image_url") @db.VarChar(500)
   parentId String? @map("parent_id")
   order    Int     @default(0)
   isActive Boolean @default(true) @map("is_active")
@@ -96,13 +96,13 @@ model Item {
   id          String      @id @default(uuid())
   userId      String      @map("user_id")
   categoryId  String      @map("category_id")
-  title       String
-  description String
-  condition   String
-  status      String      @default("ACTIVE")
+  title       String      @db.VarChar(200)
+  description String      @db.Text
+  condition   String      @db.VarChar(50)
+  status      String      @default("ACTIVE") @db.VarChar(50)
   viewCount   Int         @default(0) @map("view_count")
-  city        String?
-  district    String?
+  city        String?     @db.VarChar(100)
+  district    String?     @db.VarChar(100)
   // Tahmini değer - takas tekliflerinde kullanılır
   estimatedValue Float?   @map("estimated_value")
   createdAt   DateTime    @default(now()) @map("created_at")
@@ -131,7 +131,7 @@ model Item {
 model ItemImage {
   id           String  @id @default(uuid())
   itemId       String  @map("item_id")
-  imageUrl     String  @map("image_url")
+  imageUrl     String  @map("image_url") @db.VarChar(500)
   displayOrder Int     @default(0) @map("display_order")
   isPrimary    Boolean @default(false) @map("is_primary")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -153,8 +153,8 @@ model Trade {
   initiatorId String      @map("initiator_id")  // Teklif veren kullanıcı
   receiverId  String      @map("receiver_id")   // Teklif alan kullanıcı
   cashOffer   Float?      @map("cash_offer")    // Üste teklif edilen para (opsiyonel)
-  status      String      @default("PENDING")
-  note        String?                           // Teklif notu
+  status      String      @default("PENDING") @db.VarChar(50)
+  note        String?     @db.Text              // Teklif notu
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
@@ -178,7 +178,7 @@ model TradeItem {
   id      String    @id @default(uuid())
   tradeId String    @map("trade_id")
   itemId  String    @map("item_id")
-  side    String
+  side    String    @db.VarChar(50)
 
   // İlişkiler
   trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
@@ -221,8 +221,8 @@ model Message {
   id        String      @id @default(uuid())
   roomId    String      @map("room_id")
   senderId  String      @map("sender_id")
-  content   String
-  type      String      @default("TEXT")
+  content   String      @db.Text
+  type      String      @default("TEXT") @db.VarChar(50)
   isRead    Boolean     @default(false) @map("is_read")
   createdAt DateTime    @default(now()) @map("created_at")
 

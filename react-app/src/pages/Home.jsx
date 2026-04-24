@@ -1,6 +1,7 @@
 import { Search, Smartphone, Sofa, Shirt, BookOpen, Music, Bike, Watch, Gamepad2, Box, ArrowRight, ChevronLeft, ChevronRight, Star, Award, Heart, HelpCircle } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../lib/api';
 
 export default function Home() {
     const categories = [
@@ -15,26 +16,49 @@ export default function Home() {
         { icon: Box, label: 'Diğer', slug: 'diger' },
     ];
 
-    const ads = [
-        { id: 1, title: 'Sony PS5 Digital', category: 'ELEKTRONİK', tag: 'YENİ GİBİ', user: 'Burak', initials: 'B', image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400' },
-        { id: 2, title: 'Audi R8 Coupe', category: 'ARAÇ', tag: 'SIFIR', user: 'Chat Atés', initials: 'C', image: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=400' },
-        { id: 3, title: 'Vintage Deri Ceket', category: 'GİYİM', tag: 'YENİ GİBİ', user: 'Chat Atés', initials: 'C', image: 'https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?auto=format&fit=crop&q=80&w=400' },
-        { id: 4, title: 'Antika Plak Çalar', category: 'MÜZİK', tag: 'NADİR', user: 'Hasan Kızıltan', initials: 'H', image: 'https://images.unsplash.com/photo-1460036521480-ff49c08c2781?auto=format&fit=crop&q=80&w=400' },
-    ];
+    const [ads, setAds] = useState([]);
+    const [featuredAdsData, setFeaturedAdsData] = useState([]);
+    const [popularAdsData, setPopularAdsData] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const featuredAds = [
-        { id: 5, title: 'iPhone 15 Pro', category: 'ELEKTRONİK', tag: 'VİTRİN', user: 'Emre', initials: 'E', image: 'https://images.unsplash.com/photo-1696446701796-da61225697cc?auto=format&fit=crop&q=80&w=400' },
-        { id: 6, title: 'Retro Bisiklet', category: 'SPOR', tag: 'POPÜLER', user: 'Zeynep', initials: 'Z', image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=400' },
-        { id: 7, title: 'Akustik Gitar', category: 'MÜZİK', tag: 'ÖNE ÇIKAN', user: 'Can', initials: 'C', image: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&q=80&w=400' },
-        { id: 8, title: 'L Koltuk', category: 'MOBİLYA', tag: 'FIRSAT', user: 'Selin', initials: 'S', image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=400' },
-    ];
-
-    const popularAds = [
-        { id: 9, title: 'MacBook Air', category: 'ELEKTRONİK', tag: 'ÇOK İZLENEN', user: 'Arda', initials: 'A', image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400' },
-        { id: 10, title: 'Sony PS5', category: 'OYUN', tag: 'TALEP ÇOK', user: 'Mert', initials: 'M', image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400' },
-        { id: 11, title: 'Deri Ceket', category: 'GİYİM', tag: 'İLGİ GÖREN', user: 'Hicran', initials: 'H', image: 'https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?auto=format&fit=crop&q=80&w=400' },
-        { id: 12, title: 'Kamp Çadırı', category: 'SPOR', tag: 'SEZONLUK', user: 'Oğuz', initials: 'O', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&w=400' },
-    ];
+    // Fetch items from backend API
+    useEffect(() => {
+        const fetchItems = async () => {
+            try {
+                setLoading(true);
+                const response = await api.getItems({ limit: 12, status: 'ACTIVE' });
+                const items = response.data?.items || [];
+                
+                // Transform backend data to match frontend format
+                const transformedItems = items.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    category: item.category?.name?.toUpperCase() || 'GENEL',
+                    tag: item.condition === 'NEW' ? 'SIFIR' : 'YENİ GİBİ',
+                    user: item.user?.profile?.firstName || 'Kullanıcı',
+                    initials: (item.user?.profile?.firstName?.[0] || 'K').toUpperCase(),
+                    image: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400'
+                }));
+                
+                setAds(transformedItems.slice(0, 4));
+                setFeaturedAdsData(transformedItems.slice(4, 8));
+                setPopularAdsData(transformedItems.slice(8, 12));
+            } catch (error) {
+                console.error('İlanlar yüklenirken hata:', error);
+                // Fallback to mock data if API fails
+                setAds([
+                    { id: 1, title: 'Sony PS5 Digital', category: 'ELEKTRONİK', tag: 'YENİ GİBİ', user: 'Burak', initials: 'B', image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400' },
+                    { id: 2, title: 'Audi R8 Coupe', category: 'ARAÇ', tag: 'SIFIR', user: 'Chat Atés', initials: 'C', image: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=400' },
+                ]);
+                setFeaturedAdsData([]);
+                setPopularAdsData([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        
+        fetchItems();
+    }, []);
 
 
     const [activeRec, setActiveRec] = useState(0);
@@ -298,7 +322,7 @@ export default function Home() {
                             </div>
 
                             <div className="grid grid-cols-4 gap-10">
-                                {featuredAds.map((ad) => (
+                                {featuredAdsData.map((ad) => (
                                     <Link to={`/ilan/${ad.id}`} key={ad.id} className="group bg-[#fbfaf8] border border-stone-50 rounded-[2.5rem] p-5 transition-all duration-500 hover:shadow-2xl hover:shadow-stone-200/50 hover:-translate-y-2 block">
                                         <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-stone-50 mb-6">
                                             {ad.image ? (
@@ -357,7 +381,7 @@ export default function Home() {
                             </div>
 
                             <div className="grid grid-cols-4 gap-10">
-                                {popularAds.map((ad) => (
+                                {popularAdsData.map((ad) => (
                                     <Link to={`/ilan/${ad.id}`} key={ad.id} className="group bg-[#fbfaf8] border border-stone-50 rounded-[2.5rem] p-5 transition-all duration-500 hover:shadow-2xl hover:shadow-stone-200/50 hover:-translate-y-2 block">
                                         <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-stone-50 mb-6">
                                             {ad.image ? (

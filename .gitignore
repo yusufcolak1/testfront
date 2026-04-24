@@ -2,6 +2,8 @@
 node_modules/
 dist/
 .env
+.env.local
+.env.production
 .DS_Store
 *.log
 
@@ -9,11 +11,22 @@ dist/
 server/node_modules/
 server/dist/
 server/.env
+server/.env.production
 server/uploads/
 server/logs/
 server/package-lock.json
+server/prisma/dev.db
+server/prisma/dev.db-journal
+server/prisma/*.db
+server/prisma/*.db-journal
 
-# Frontend Specific (if applicable)
+# Frontend Specific
 react-app/node_modules/
 react-app/dist/
 react-app/.env
+react-app/.env.production
+react-app/package-lock.json
+
+# PM2
+.pm2/
+*.pid

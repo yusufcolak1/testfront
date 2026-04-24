@@ -1,0 +1,243 @@
+// PRODUCTION SCHEMA - PostgreSQL ile kullanım için
+// Bu dosyayı production'da schema.prisma olarak kopyalayın
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  SUSPENDED
+}
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ItemStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  ARCHIVED
+}
+
+enum TradeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum TradeSide {
+  OFFER
+  REQUEST
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(USER)
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  profile      Profile?
+  items        Item[]
+  sentTrades   Trade[]       @relation("SentTrades")
+  receivedTrades Trade[]     @relation("ReceivedTrades")
+  chatRooms    ChatRoom[]
+  messages     Message[]
+  favorites    Favorite[]
+
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  firstName   String   @map("first_name")
+  lastName    String   @map("last_name")
+  phone       String?
+  address     String?
+  city        String?
+  country     String?  @default("Turkey")
+  bio         String?
+  avatarUrl   String?  @map("avatar_url")
+  rating      Float    @default(0.0)
+  totalTrades Int      @default(0) @map("total_trades")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  parentId    String?  @map("parent_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  items       Item[]
+
+  @@map("categories")
+}
+
+model Item {
+  id          String        @id @default(uuid())
+  userId      String        @map("user_id")
+  categoryId  String        @map("category_id")
+  title       String
+  description String
+  condition   ItemCondition
+  status      ItemStatus    @default(DRAFT)
+  location    String?
+  estimatedValue Float?     @map("estimated_value")
+  viewCount   Int           @default(0) @map("view_count")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category      @relation(fields: [categoryId], references: [id])
+  images      ItemImage[]
+  sentTrades  TradeItem[]   @relation("OfferedItems")
+  receivedTrades TradeItem[] @relation("RequestedItems")
+  favorites   Favorite[]
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([status])
+  @@map("items")
+}
+
+model ItemImage {
+  id           String   @id @default(uuid())
+  itemId       String   @map("item_id")
+  imageUrl     String   @map("image_url")
+  displayOrder Int      @default(0) @map("display_order")
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("item_images")
+}
+
+model Trade {
+  id          String      @id @default(uuid())
+  senderId    String      @map("sender_id")
+  receiverId  String      @map("receiver_id")
+  status      TradeStatus @default(PENDING)
+  message     String?
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  sender      User        @relation("SentTrades", fields: [senderId], references: [id])
+  receiver    User        @relation("ReceivedTrades", fields: [receiverId], references: [id])
+  tradeItems  TradeItem[]
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@map("trades")
+}
+
+model TradeItem {
+  id        String    @id @default(uuid())
+  tradeId   String    @map("trade_id")
+  itemId    String    @map("item_id")
+  side      TradeSide
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  item  Item  @relation(side == OFFER ? "OfferedItems" : "RequestedItems", fields: [itemId], references: [id])
+
+  @@index([tradeId])
+  @@index([itemId])
+  @@map("trade_items")
+}
+
+model ChatRoom {
+  id        String    @id @default(uuid())
+  userIds   String[]  @map("user_ids")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  users    User[]
+  messages Message[]
+
+  @@map("chat_rooms")
+}
+
+model Message {
+  id         String      @id @default(uuid())
+  chatRoomId String      @map("chat_room_id")
+  senderId   String      @map("sender_id")
+  content    String
+  type       MessageType @default(TEXT)
+  isRead     Boolean     @default(false) @map("is_read")
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  sender   User     @relation(fields: [senderId], references: [id])
+
+  @@index([chatRoomId])
+  @@index([senderId])
+  @@map("messages")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  itemId    String   @map("item_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+  @@index([userId])
+  @@index([itemId])
+  @@map("favorites")
+}

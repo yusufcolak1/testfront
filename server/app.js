@@ -30,7 +30,6 @@ app.use(helmet({
 
 // CORS: İzin verilen origin'ler
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Preflight istekler için
 
 // Rate Limiting: Brute force ve DDoS koruması
 const limiter = rateLimit({

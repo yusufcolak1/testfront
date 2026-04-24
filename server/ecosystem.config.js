@@ -1,5 +1,5 @@
-# TAKASON Backend - PM2 Üretim Yapılandırması
-# Kullanım: pm2 start ecosystem.config.js --env production
+// TAKASON Backend - PM2 Production Configuration
+// Usage: pm2 start ecosystem.config.js --env production
 
 module.exports = {
   apps: [
@@ -7,11 +7,11 @@ module.exports = {
       name: 'takason-api',
       script: './server.js',
 
-      # ---- Cluster Mode: Tüm CPU çekirdeklerini kullan ----
-      instances: 'max',       # Otomatik: CPU çekirdeği sayısı kadar
+      // ---- Cluster Mode: Use all CPU cores ----
+      instances: 'max',       // Automatic: number of CPU cores
       exec_mode: 'cluster',
 
-      # ---- Çevresel Değişkenler ----
+      // ---- Environment Variables ----
       env: {
         NODE_ENV: 'development',
         PORT: 5000,
@@ -21,15 +21,15 @@ module.exports = {
         PORT: 5000,
       },
 
-      # ---- Otomatik Yeniden Başlatma ----
-      watch: false,           # Üretimde watch kapalı
-      max_memory_restart: '500M', # 500MB'ı geçince yeniden başlat
+      // ---- Auto Restart ----
+      watch: false,           // Watch disabled in production
+      max_memory_restart: '500M', // Restart if exceeds 500MB
 
-      # ---- Çarpışma Koruması ----
-      min_uptime: '10s',      # En az 10 saniye ayakta kalmalı
-      max_restarts: 10,       # Arka arkaya 10 çöküşten sonra dur
+      // ---- Crash Protection ----
+      min_uptime: '10s',      // Must stay up for at least 10 seconds
+      max_restarts: 10,       // Stop after 10 consecutive crashes
 
-      # ---- Log Ayarları ----
+      // ---- Log Settings ----
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       error_file: './logs/error.log',
       out_file: './logs/out.log',
