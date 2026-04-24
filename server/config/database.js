@@ -3,24 +3,61 @@
 // Singleton pattern: Her hot-reload'da yeni bağlantı açılmasını engeller
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
+const { Pool } = require('pg');
 
-// Geliştirme ortamında singleton pattern uygula
-// Aksi hâlde nodemon her yeniden başlamada yeni client oluşturur
-let prisma;
+// PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+});
 
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({
-    log: ['error', 'warn'],
-  });
-} else {
-  // Global değişkende sakla - hot-reload'dan korunmak için
-  if (!global.__prisma) {
-    global.__prisma = new PrismaClient({
-      log: ['query', 'info', 'warn', 'error'],
-    });
+// Test connection
+pool.on('connect', () => {
+  console.log('✅ PostgreSQL bağlantısı başarılı');
+});
+
+pool.on('error', (err) => {
+  console.error('❌ PostgreSQL havuz hatası:', err);
+});
+
+// Query helper
+const query = async (text, params) => {
+  const start = Date.now();
+  try {
+    const res = await pool.query(text, params);
+    const duration = Date.now() - start;
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Executed query', { text, duration, rows: res.rowCount });
+    }
+    return res;
+  } catch (error) {
+    console.error('Query error:', error);
+    throw error;
   }
-  prisma = global.__prisma;
-}
+};
 
-module.exports = prisma;
+// Transaction helper
+const transaction = async (callback) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+// Graceful shutdown
+process.on('beforeExit', async () => {
+  await pool.end();
+});
+
+module.exports = { pool, query, transaction };
