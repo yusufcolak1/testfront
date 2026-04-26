@@ -51,6 +51,8 @@ const itemQuerySchema = z.object({
   maxValue: z.string().regex(/^\d+$/).transform(Number).optional(),
   search: z.string().max(100).optional(),
   sort: z.enum(['newest', 'oldest', 'value_asc', 'value_desc']).default('newest').optional(),
+  isFeatured: z.string().transform(v => v === 'true').optional(),
+  isPopular: z.string().transform(v => v === 'true').optional(),
 });
 
 module.exports = { createItemSchema, updateItemSchema, itemQuerySchema };

@@ -1,13 +1,35 @@
-import React from 'react';
-import { Star, ShieldCheck, Zap, Rocket, Check, ArrowRight, Sparkles, CheckCircle2, Flame, Gem } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Star, ShieldCheck, Zap, Rocket, Check, ArrowRight, Sparkles, CheckCircle2, Flame, Gem, Shield, Crown } from 'lucide-react';
+import api from '../lib/api';
+
+const iconMap = { Zap, Rocket, ShieldCheck, Star, Sparkles, Shield, Crown };
+const renderIcon = (name) => {
+    const Icon = iconMap[name] || Sparkles;
+    return <Icon className="w-4 h-4 text-amber-400" />;
+};
 
 export default function Premium() {
-    const features = [
-        { title: 'Sınırsız İlan', desc: 'Dilediğin kadar ürünü takasa çıkar.', icon: <Zap className="w-4 h-4 text-amber-400" /> },
-        { title: 'Öncelikli Sıralama', desc: 'İlanların her zaman en üstte.', icon: <Rocket className="w-4 h-4 text-amber-400" /> },
-        { title: 'Özel Rozet', desc: 'Profilinde Elite rozeti ile güven ver.', icon: <ShieldCheck className="w-4 h-4 text-amber-400" /> },
-        { title: 'Sınırsız Mesaj', desc: 'Günlük mesaj limitine takılma.', icon: <Star className="w-4 h-4 text-amber-400" /> },
-    ];
+    const [features, setFeatures] = useState([]);
+    const [plans, setPlans] = useState([]);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const [perks, p] = await Promise.all([api.getPremiumPerks(), api.getPremiumPlans()]);
+                if (cancelled) return;
+                setFeatures((perks.data || []).slice(0, 4).map((perk) => ({
+                    title: perk.title,
+                    desc: perk.description,
+                    icon: renderIcon(perk.icon),
+                })));
+                setPlans(p.data || []);
+            } catch (e) { console.error(e); }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    const monthly = plans.find((pl) => pl.period === 'MONTHLY') || { price: 49.99, features: [] };
 
     return (
         <div className="min-h-screen bg-[#f5f1ed] pb-20">
@@ -57,17 +79,12 @@ export default function Premium() {
                             <div className="relative z-10">
                                 <span className="px-4 py-1.5 bg-amber-400 text-stone-900 rounded-full text-[9px] font-black tracking-widest uppercase mb-6 inline-block">AYLIK PLAN</span>
                                 <div className="flex items-baseline gap-2 mb-8 justify-center lg:justify-start">
-                                    <span className="text-6xl md:text-7xl font-serif font-black text-amber-400 tracking-tighter">99</span>
+                                    <span className="text-6xl md:text-7xl font-serif font-black text-amber-400 tracking-tighter">{Math.floor(monthly.price)}</span>
                                     <span className="text-xl font-serif font-bold text-stone-500">₺/ay</span>
                                 </div>
 
                                 <ul className="space-y-4 mb-10 border-t border-stone-800 pt-8">
-                                    {[
-                                        'Tüm Elite Özellikler',
-                                        'Reklamsız Deneyim',
-                                        'Öncelikli Sıralama',
-                                        '7/24 Teknik Destek'
-                                    ].map((item, i) => (
+                                    {(monthly.features?.length ? monthly.features : ['Tüm Elite Özellikler', 'Reklamsız Deneyim', 'Öncelikli Sıralama', '7/24 Teknik Destek']).map((item, i) => (
                                         <li key={i} className="flex items-center gap-4 text-stone-300 text-xs font-serif italic">
                                             <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center">
                                                 <Check className="w-3 h-3 text-stone-900" />

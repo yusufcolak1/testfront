@@ -3,7 +3,7 @@
 // Arama, filtreleme ve view_count yönetimi
 // ============================================================
 
-const prisma = require('../config/database');
+const { prisma } = require('../config/database');
 const { AppError } = require('../middlewares/errorHandler');
 const { parsePagination } = require('../utils/response');
 
@@ -20,11 +20,13 @@ const getItems = async (query) => {
 
   if (query.categoryId) where.categoryId = query.categoryId;
   if (query.condition) where.condition = query.condition;
-  if (query.city) where.city = { contains: query.city, mode: 'insensitive' };
+  if (query.city) where.location = { contains: query.city };
+  if (query.isFeatured !== undefined) where.isFeatured = query.isFeatured;
+  if (query.isPopular !== undefined) where.isPopular = query.isPopular;
   if (query.search) {
     where.OR = [
-      { title: { contains: query.search, mode: 'insensitive' } },
-      { description: { contains: query.search, mode: 'insensitive' } },
+      { title: { contains: query.search } },
+      { description: { contains: query.search } },
     ];
   }
   if (query.minValue || query.maxValue) {
@@ -54,8 +56,7 @@ const getItems = async (query) => {
         id: true,
         title: true,
         condition: true,
-        city: true,
-        district: true,
+        location: true,
         estimatedValue: true,
         viewCount: true,
         createdAt: true,
@@ -63,7 +64,7 @@ const getItems = async (query) => {
         user: {
           select: {
             id: true,
-            profile: { select: { firstName: true, lastName: true, avatarUrl: true, trustScore: true } },
+            profile: { select: { firstName: true, lastName: true, avatarUrl: true, rating: true } },
           },
         },
         images: {
@@ -95,7 +96,7 @@ const getItemById = async (id, userId = null) => {
               firstName: true,
               lastName: true,
               avatarUrl: true,
-              trustScore: true,
+              rating: true,
               city: true,
             },
           },
@@ -145,8 +146,8 @@ const createItem = async (userId, data, files = []) => {
       title: data.title,
       description: data.description,
       condition: data.condition,
-      city: data.city,
-      district: data.district,
+      status: data.status || 'ACTIVE',
+      location: data.location || data.city || null,
       estimatedValue: data.estimatedValue ? parseFloat(data.estimatedValue) : null,
       // Görselleri nested write ile ekle
       images: {

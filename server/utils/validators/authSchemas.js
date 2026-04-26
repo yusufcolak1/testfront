@@ -32,6 +32,9 @@ const registerSchema = z.object({
     .min(2, 'Soyad en az 2 karakter olmalıdır.')
     .max(50, 'Soyad en fazla 50 karakter olabilir.')
     .trim(),
+
+  phone: z.string().optional(),
+  city: z.string().optional(),
 });
 
 // Giriş yap

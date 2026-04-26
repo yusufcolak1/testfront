@@ -19,45 +19,43 @@ export default function Home() {
     const [ads, setAds] = useState([]);
     const [featuredAdsData, setFeaturedAdsData] = useState([]);
     const [popularAdsData, setPopularAdsData] = useState([]);
+    const [settings, setSettings] = useState({});
     const [loading, setLoading] = useState(true);
 
-    // Fetch items from backend API
+    // Fetch items and settings from backend API
     useEffect(() => {
-        const fetchItems = async () => {
+        const fetchData = async () => {
             try {
                 setLoading(true);
-                const response = await api.getItems({ limit: 12, status: 'ACTIVE' });
-                const items = response.data?.items || [];
-                
-                // Transform backend data to match frontend format
-                const transformedItems = items.map(item => ({
+                const [itemsRes, featuredRes, popularRes, settingsRes] = await Promise.all([
+                    api.getItems({ limit: 4, sort: 'newest' }),
+                    api.getItems({ limit: 4, isFeatured: 'true' }),
+                    api.getItems({ limit: 4, isPopular: 'true' }),
+                    api.getPublicSettings()
+                ]);
+
+                const transform = (items) => (items || []).map(item => ({
                     id: item.id,
                     title: item.title,
                     category: item.category?.name?.toUpperCase() || 'GENEL',
-                    tag: item.condition === 'NEW' ? 'SIFIR' : 'YENİ GİBİ',
+                    tag: item.tag || (item.condition === 'NEW' ? 'SIFIR' : 'YENİ GİBİ'),
                     user: item.user?.profile?.firstName || 'Kullanıcı',
                     initials: (item.user?.profile?.firstName?.[0] || 'K').toUpperCase(),
-                    image: item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400'
+                    image: item.images?.find(img => img.isPrimary)?.imageUrl || item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400'
                 }));
-                
-                setAds(transformedItems.slice(0, 4));
-                setFeaturedAdsData(transformedItems.slice(4, 8));
-                setPopularAdsData(transformedItems.slice(8, 12));
+
+                setAds(transform(itemsRes.data?.items));
+                setFeaturedAdsData(transform(featuredRes.data?.items));
+                setPopularAdsData(transform(popularRes.data?.items));
+                setSettings(settingsRes.data || {});
             } catch (error) {
-                console.error('İlanlar yüklenirken hata:', error);
-                // Fallback to mock data if API fails
-                setAds([
-                    { id: 1, title: 'Sony PS5 Digital', category: 'ELEKTRONİK', tag: 'YENİ GİBİ', user: 'Burak', initials: 'B', image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400' },
-                    { id: 2, title: 'Audi R8 Coupe', category: 'ARAÇ', tag: 'SIFIR', user: 'Chat Atés', initials: 'C', image: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=400' },
-                ]);
-                setFeaturedAdsData([]);
-                setPopularAdsData([]);
+                console.error('Veriler yüklenirken hata:', error);
             } finally {
                 setLoading(false);
             }
         };
         
-        fetchItems();
+        fetchData();
     }, []);
 
 
@@ -140,14 +138,14 @@ export default function Home() {
                             {/* Title Section */}
                             <div className="flex-1 text-left space-y-8">
                                 <h2 id="ui-static-slogan" className="text-7xl lg:text-8xl font-serif text-stone-900 tracking-tight leading-[1.2] lg:leading-[1.1]">
-                                    <span className="block italic text-[#5a4a40] mb-2">Her Eşya İkinci Bir</span>
-                                    <span className="block">Şansı Hak Eder</span>
+                                    <span className="block italic text-[#5a4a40] mb-2">{settings.site_slogan_1 || 'Her Eşya İkinci Bir'}</span>
+                                    <span className="block">{settings.site_slogan_2 || 'Şansı Hak Eder'}</span>
                                 </h2>
                                 <p className="text-2xl text-stone-500 font-serif italic font-medium max-w-2xl mx-0 leading-normal">
-                                    Eşyalarını takasla, değerini koru.
+                                    {settings.site_description || 'Eşyalarını takasla, değerini koru.'}
                                 </p>
 
-                                <div className="pt-8 w-full max-w-2xl mx-0 invisible select-none pointer-events-none">
+                                <div className="pt-8 w-full max-w-2xl mx-0">
                                     <div className="relative group shadow-2xl shadow-stone-900/5 rounded-3xl">
                                         <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
                                             <Search className="w-5 h-5 text-stone-400 group-focus-within:text-stone-900 transition-colors" />

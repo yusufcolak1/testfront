@@ -1,15 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Check, RefreshCcw, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../lib/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function SwapHistory() {
     const navigate = useNavigate();
+    const { user } = useAuth();
+    const [history, setHistory] = useState([]);
 
-    const history = [
-        { id: 1, title: 'iPhone 13 vs MacBook Air', date: '12 Mart 2024', status: 'Tamamlandı', partner: 'Ahmet Y.', image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400' },
-        { id: 2, title: 'Bisiklet vs Oyun Konsolu', date: '5 Mart 2024', status: 'Tamamlandı', partner: 'Selin K.', image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400' },
-        { id: 3, title: 'Kitap Seti vs Kulaklık', date: '28 Şubat 2024', status: 'Tamamlandı', partner: 'Mert O.', image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400' }
-    ];
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const r = await api.getMyTrades('COMPLETED');
+                if (cancelled) return;
+                setHistory((r.data || []).map((t) => {
+                    const offer = t.tradeItems.find((ti) => ti.side === 'OFFER')?.item;
+                    const request = t.tradeItems.find((ti) => ti.side === 'REQUEST')?.item;
+                    const partner = t.senderId === user?.id ? t.receiver : t.sender;
+                    return {
+                        id: t.id,
+                        title: `${offer?.title || 'Eşya'} ↔ ${request?.title || 'Eşya'}`,
+                        date: new Date(t.updatedAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }),
+                        status: 'Tamamlandı',
+                        partner: partner?.profile ? `${partner.profile.firstName} ${(partner.profile.lastName||'').charAt(0)}.` : 'Kullanıcı',
+                        image: offer?.images?.[0]?.imageUrl || request?.images?.[0]?.imageUrl || '',
+                    };
+                }));
+            } catch (e) { console.error(e); }
+        })();
+        return () => { cancelled = true; };
+    }, [user?.id]);
 
     return (
         <div className="min-h-screen bg-[#f5f1ed] pb-24 px-6 pt-8">
@@ -26,7 +48,7 @@ export default function SwapHistory() {
 
                 <div className="mb-8 md:mb-12 text-center md:text-left">
                     <h1 className="text-3xl md:text-4xl font-serif font-black text-stone-900 leading-tight mb-2 italic">Tüm Takas Geçmişim</h1>
-                    <p className="text-xs md:text-lg text-stone-500 font-serif italic font-medium">Toplam 42 başarılı takas gerçekleştirdiğiniz görülmektedir.</p>
+                    <p className="text-xs md:text-lg text-stone-500 font-serif italic font-medium">Toplam {history.length} başarılı takas gerçekleştirdiğiniz görülmektedir.</p>
                 </div>
 
                 <div className="space-y-4">

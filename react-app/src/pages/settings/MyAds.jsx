@@ -1,15 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Package, Trash2, Edit2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../lib/api';
+
+const statusLabel = (s) => ({ ACTIVE: 'Aktif', DRAFT: 'Taslak', SOLD: 'Satıldı', ARCHIVED: 'Arşiv', DELETED: 'Silindi' }[s] || s);
 
 export default function MyAds() {
     const navigate = useNavigate();
+    const [ads, setAds] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const ads = [
-        { id: 1, title: 'Takaslık iPhone 15 Pro', category: 'ELEKTRONİK', status: 'Aktif', views: 42, image: 'https://images.unsplash.com/photo-1696446701796-da61225697cc?auto=format&fit=crop&q=80&w=400' },
-        { id: 2, title: 'Retro Bisiklet', category: 'SPOR', status: 'Aktif', views: 18, image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=400' },
-        { id: 3, title: 'Akustik Gitar', category: 'MÜZİK', status: 'Kontrol Ediliyor', views: 5, image: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&q=80&w=400' }
-    ];
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const r = await api.getMyAds();
+                if (cancelled) return;
+                setAds((r.data || []).map((it) => ({
+                    id: it.id,
+                    title: it.title,
+                    category: it.category?.name?.toUpperCase() || 'GENEL',
+                    status: statusLabel(it.status),
+                    views: it.viewCount || 0,
+                    image: it.images?.[0]?.imageUrl || '',
+                })));
+            } catch (e) { console.error(e); }
+            finally { if (!cancelled) setLoading(false); }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    const handleDelete = async (id) => {
+        if (!confirm('İlanı silmek istediğinize emin misiniz?')) return;
+        try { await api.deleteItem(id); setAds((p) => p.filter((a) => a.id !== id)); } catch (e) { alert(e.message); }
+    };
 
     return (
         <div className="min-h-screen bg-[#f5f1ed] pb-24 px-6 pt-8">
@@ -27,7 +51,7 @@ export default function MyAds() {
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 mb-10 md:mb-12 text-center md:text-left">
                     <div className="space-y-1">
                         <h1 className="text-3xl md:text-4xl font-serif font-black text-stone-900 leading-tight italic">Aktif İlanlarım</h1>
-                        <p className="text-xs md:text-lg text-stone-500 font-serif italic font-medium">Şu an yayında olan 8 adet ilanınız bulunmaktadır.</p>
+                        <p className="text-xs md:text-lg text-stone-500 font-serif italic font-medium">Şu an yayında olan {ads.filter(a => a.status === 'Aktif').length} adet ilanınız bulunmaktadır.</p>
                     </div>
                     <div className="relative group w-full md:w-80">
                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300" />
@@ -57,7 +81,7 @@ export default function MyAds() {
                                         <button className="p-2 bg-stone-50 text-stone-400 rounded-lg hover:text-stone-900 hover:bg-white transition-all shadow-sm">
                                             <Edit2 className="w-3 md:w-3.5 h-3 md:h-3.5" />
                                         </button>
-                                        <button className="p-2 bg-red-50 text-red-400 rounded-lg hover:text-red-500 hover:bg-white transition-all shadow-sm">
+                                        <button onClick={() => handleDelete(ad.id)} className="p-2 bg-red-50 text-red-400 rounded-lg hover:text-red-500 hover:bg-white transition-all shadow-sm">
                                             <Trash2 className="w-3 md:w-3.5 h-3 md:h-3.5" />
                                         </button>
                                     </div>

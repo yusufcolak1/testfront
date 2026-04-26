@@ -35,7 +35,7 @@ export default function LoginModal({ isOpen, onClose }) {
         setError(result.message || 'Giriş başarısız');
       }
     } catch (err) {
-      setError('Bir hata oluştu');
+      setError(err.message || 'Bir hata oluştu');
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export default function LoginModal({ isOpen, onClose }) {
         setError(result.message || 'Kayıt başarısız');
       }
     } catch (err) {
-      setError('Bir hata oluştu');
+      setError(err.message || 'Bir hata oluştu');
     } finally {
       setLoading(false);
     }

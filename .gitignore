@@ -1,18 +1,19 @@
 # Global
 node_modules/
 dist/
-.env
-.env.local
-.env.production
+.env*
+!.env.example
 .DS_Store
 *.log
+Thumbs.db
 
 # Server Specific
 server/node_modules/
 server/dist/
-server/.env
-server/.env.production
-server/uploads/
+server/.env*
+!.server/.env.example
+server/uploads/*
+!server/uploads/.gitkeep
 server/logs/
 server/package-lock.json
 server/prisma/dev.db
@@ -23,10 +24,11 @@ server/prisma/*.db-journal
 # Frontend Specific
 react-app/node_modules/
 react-app/dist/
-react-app/.env
-react-app/.env.production
+react-app/.env*
+!.react-app/.env.example
 react-app/package-lock.json
 
 # PM2
 .pm2/
 *.pid
+

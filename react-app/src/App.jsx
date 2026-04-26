@@ -1,10 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import IntroCanvas from './components/IntroCanvas';
 import LoginModal from './components/LoginModal';
-import { Coins, Crown, Star, Search, Activity, Smartphone, Sofa, Shirt, BookOpen, Music, Bike, Watch, Gamepad2, Box, ArrowRight, Award, Home as HomeIcon, Compass, PlusCircle, MessageCircle, Heart, X, User, LogOut } from 'lucide-react';
+import { Coins, Crown, Star, Search, Activity, Smartphone, Sofa, Shirt, BookOpen, Music, Bike, Watch, Gamepad2, Box, ArrowRight, Award, Home as HomeIcon, Compass, PlusCircle, MessageCircle, Heart, X, User, LogOut, Settings as SettingsIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import api from './lib/api';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminUsers from './pages/admin/Users';
+import AdminItems from './pages/admin/Items';
+import AdminCategories from './pages/admin/Categories';
+import AdminTrades from './pages/admin/Trades';
+import AdminFaqs from './pages/admin/Faqs';
+import AdminHelpCategories from './pages/admin/HelpCategories';
+import AdminPerks from './pages/admin/Perks';
+import AdminPlans from './pages/admin/Plans';
+import AdminSteps from './pages/admin/Steps';
+import AdminSettings from './pages/admin/Settings';
 import Home from './pages/Home';
 import Favorites from './pages/Favorites';
 import CreateAd from './pages/CreateAd';
@@ -17,7 +30,9 @@ import AdDetail from './pages/AdDetail';
 import Discover from './pages/Discover';
 import Footer from './components/Footer';
 import HelpCenter from './pages/support/HelpCenter';
-import MakeOffer from './pages/MakeOffer';
+import TradeOffer from './pages/TradeOffer';
+import Trades from './pages/settings/Trades';
+import NotificationBell from './components/NotificationBell';
 import CategoryPage from './pages/CategoryPage';
 import SafeSwapGuide from './pages/support/SafeSwapGuide';
 import KVKK from './pages/support/KVKK';
@@ -46,22 +61,30 @@ function App() {
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
 
   const [activeLeaderNavBar, setActiveLeaderNavBar] = useState(0);
-
-  const leaders = [
-    { name: 'Hasan K.', medal: '🥇' },
-    { name: 'Mehmet Y.', medal: '🥈' },
-    { name: 'Selin K.', medal: '🥉' }
-  ];
+  const [leaders, setLeaders] = useState([]);
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.getLeaderboard(3);
+        if (cancelled) return;
+        setLeaders((r.data || []).map((u) => ({ name: u.name, medal: u.medal || '⭐' })));
+      } catch (e) { /* sessizce yut — header */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (leaders.length === 0) return;
     const timer = setInterval(() => {
-      setActiveLeaderNavBar((prev) => (prev + 1) % 3);
+      setActiveLeaderNavBar((prev) => (prev + 1) % leaders.length);
     }, 2500);
     return () => clearInterval(timer);
-  }, []);
+  }, [leaders.length]);
   const [navSearchTerm, setNavSearchTerm] = useState('');
 
   // Animasyonun bu oturumda oynatılıp oynatılmadığını kontrol et
@@ -118,7 +141,7 @@ function App() {
 
       <div id="ui-container" className={showIntro ? "fixed top-[15vh] left-0 w-full pointer-events-none z-10 overflow-hidden opacity-0" : "relative z-10 w-full"}>
 
-        <header className={`header-modern shadow-2xl shrink-0 transition-all duration-500 ease-in-out ${isSearchOpen ? 'h-[120px] lg:h-24' : 'h-16 lg:h-24'} overflow-hidden flex flex-col`}>
+        <header className={`header-modern shadow-2xl shrink-0 transition-all duration-500 ease-in-out ${isSearchOpen ? 'h-[120px] lg:h-24' : 'h-16 lg:h-24'} flex flex-col`}>
           {/* Ana Satır: Logo ve Navigasyon */}
           <div className="container mx-auto px-4 md:px-6 h-16 lg:h-24 flex items-center justify-between relative shrink-0">
 
@@ -225,6 +248,8 @@ function App() {
                 ))}
               </div>
 
+              {isAuthenticated && <NotificationBell />}
+
               {isAuthenticated ? (
                 <div className="relative group shrink-0">
                   <Link to="/profil" className="block">
@@ -237,13 +262,21 @@ function App() {
                       </div>
                     </div>
                   </Link>
-                  <button
-                    onClick={logout}
-                    className="absolute top-full right-0 mt-2 px-4 py-2 bg-white border border-stone-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex items-center gap-2 text-sm hover:bg-stone-50"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Çıkış Yap
-                  </button>
+                  <div className="absolute top-full right-0 mt-2 bg-white border border-stone-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col text-sm overflow-hidden min-w-[160px]">
+                    {isAdmin && (
+                      <Link to="/admin" className="px-4 py-2 hover:bg-amber-50 flex items-center gap-2 text-amber-700 font-bold">
+                        <SettingsIcon className="w-4 h-4" />
+                        Admin Paneli
+                      </Link>
+                    )}
+                    <button
+                      onClick={logout}
+                      className="px-4 py-2 hover:bg-stone-50 flex items-center gap-2 text-stone-700 text-left"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Çıkış Yap
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button
@@ -323,7 +356,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/kesfet" element={<Discover />} />
-            <Route path="/teklif-ver/:id" element={<MakeOffer />} />
+            <Route path="/teklif-ver/:id" element={<TradeOffer />} />
             <Route path="/kategori/:slug" element={<CategoryPage />} />
             <Route path="/favoriler" element={<Favorites />} />
             <Route path="/ilan-ver" element={<CreateAd />} />
@@ -341,12 +374,27 @@ function App() {
             <Route path="/profil/adreslerim" element={<AddressSettings />} />
             <Route path="/profil/bulten" element={<NewsletterSettings />} />
             <Route path="/profil/ilanlarim" element={<MyAds />} />
+            <Route path="/profil/takaslar" element={<Trades />} />
             <Route path="/profil/takas-gecmisi" element={<SwapHistory />} />
             <Route path="/profil/premium-detay" element={<PremiumDetails />} />
             <Route path="/profil/ayarlar/adres" element={<AddressSettings />} />
             <Route path="/yardim" element={<HelpCenter />} />
             <Route path="/guvenli-takas" element={<SafeSwapGuide />} />
             <Route path="/kvkk" element={<KVKK />} />
+            {/* Admin Routes — sadece admin */}
+            <Route path="/admin" element={isAdmin ? <AdminLayout /> : <Navigate to="/" replace />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="kullanicilar" element={<AdminUsers />} />
+              <Route path="ilanlar" element={<AdminItems />} />
+              <Route path="kategoriler" element={<AdminCategories />} />
+              <Route path="takaslar" element={<AdminTrades />} />
+              <Route path="sss" element={<AdminFaqs />} />
+              <Route path="yardim-kategorileri" element={<AdminHelpCategories />} />
+              <Route path="premium-avantajlar" element={<AdminPerks />} />
+              <Route path="premium-planlar" element={<AdminPlans />} />
+              <Route path="guvenli-takas-adimlari" element={<AdminSteps />} />
+              <Route path="ayarlar" element={<AdminSettings />} />
+            </Route>
           </Routes>
         </main>
         <Footer />

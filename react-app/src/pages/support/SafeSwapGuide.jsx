@@ -1,14 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Shield, CheckCircle2, AlertTriangle, UserCheck, MessageSquare, Info, Smartphone, Users, ArrowLeft } from 'lucide-react';
+import api from '../../lib/api';
+
+const iconMap = { MessageSquare, Info, Users, Smartphone, Shield, UserCheck, MapPin };
 
 export default function SafeSwapGuide() {
-    const steps = [
-        { icon: MessageSquare, title: 'Güvenli İletişim', desc: 'Takas süreçlerinizi her zaman platform içi mesajlaşma üzerinden yürütün. Kişisel bilgilerinizi koruyun.' },
-        { icon: Info, title: 'İlan Detaylarını İncele', desc: 'Ürünün açıklamalarını, fotoğraflarını ve kullanıcının geçmiş puanlarını detaylıca kontrol edin.' },
-        { icon: Users, title: 'Güvenli Buluşma', desc: 'Görüşmelerinizi gündüz vakti, kalabalık ve halka açık alanlarda gerçekleştirmeyi tercih edin.' },
-        { icon: Smartphone, title: 'Ürünü Kontrol Et', desc: 'Takas öncesinde ürünü fiziki olarak inceleyin, test edin ve her şeyin beklendiği gibi olduğundan emin olun.' }
-    ];
+    const [steps, setSteps] = useState([]);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const r = await api.getSafeSwapSteps();
+                if (cancelled) return;
+                setSteps((r.data || []).map((s) => ({
+                    icon: iconMap[s.icon] || Shield,
+                    title: s.title,
+                    desc: s.description,
+                })));
+            } catch (e) { console.error(e); }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#f5f1ed] pb-12 md:pb-24">

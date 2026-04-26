@@ -30,4 +30,10 @@ const rejectTrade = asyncHandler(async (req, res) => {
   return successResponse(res, null, result.message);
 });
 
-module.exports = { createTrade, getUserTrades, acceptTrade, rejectTrade };
+// PATCH /api/trades/:id/cancel
+const cancelTrade = asyncHandler(async (req, res) => {
+  const result = await tradeService.cancelTrade(req.params.id, req.user.id);
+  return successResponse(res, null, result.message);
+});
+
+module.exports = { createTrade, getUserTrades, acceptTrade, rejectTrade, cancelTrade };

@@ -1,16 +1,31 @@
-import React from 'react';
-import { ArrowLeft, Crown, Zap, Shield, Sparkles, AlertCircle, XCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, Crown, Zap, Shield, Sparkles, AlertCircle, XCircle, ShieldCheck, Star, Rocket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import api from '../../lib/api';
+
+const iconMap = { Zap, Shield, Sparkles, Crown, ShieldCheck, Star, Rocket };
 
 export default function PremiumDetails() {
     const navigate = useNavigate();
+    const [perks, setPerks] = useState([]);
 
-    const perks = [
-        { title: 'Öne Çıkarılan İlanlar', value: '3 / 10', desc: 'İlanlarınızı aramalarda en üst sıraya taşıyın.', icon: Zap, color: 'text-[#4a2008]' },
-        { title: 'Sınırsız Mesajlaşma', value: 'AKTİF', desc: 'Günlük mesaj sınırı olmadan takas partnerlerinizle iletişim kurun.', icon: Sparkles, color: 'text-blue-500' },
-        { title: 'Özel Profil Rozeti', value: 'GÖRÜNÜR', desc: 'Liderlik tablosunda ve ilanlarınızda "Premium" rozeti ile güven verin.', icon: Crown, color: 'text-[#4a2008]' },
-        { title: 'Reklamsız Deneyim', value: 'AKTİF', desc: 'Takason dünyasında reklamsız ve kesintisiz gezinin.', icon: Shield, color: 'text-green-500' }
-    ];
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const r = await api.getPremiumPerks();
+                if (cancelled) return;
+                setPerks((r.data || []).map((p) => ({
+                    title: p.title,
+                    value: p.value || 'AKTİF',
+                    desc: p.description,
+                    icon: iconMap[p.icon] || Sparkles,
+                    color: p.color || 'text-amber-500',
+                })));
+            } catch (e) { console.error(e); }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#f5f1ed] pb-24 px-6 pt-8">

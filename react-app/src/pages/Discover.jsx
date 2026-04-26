@@ -1,34 +1,46 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, MessageCircle, Zap, Share2, ArrowLeft, X, MapPin, Search as SearchIcon, Filter, Layers, LayoutGrid, Play, Info, Calendar, Clock, Star, Send, ChevronLeft, ChevronRight, Copy, Check, Instagram, Phone as WhatsApp, ChevronDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Heart, MessageCircle, Zap, Share2, ArrowLeft, X, MapPin, Search as SearchIcon, Filter, Layers, LayoutGrid, Play, Info, Calendar, Clock, Star, Send, ChevronLeft, ChevronRight, Copy, Check, Instagram, Phone as WhatsApp, ChevronDown, Loader2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import api from '../lib/api';
 
-// 30 adet örnek takas ilanı
-const discoverAds = Array.from({ length: 30 }, (_, i) => ({
-    id: i + 1,
-    title: [
-        "Vintage Fotoğraf Makinesi", "Elektro Gitar Setup", "iPhone 13 Pro", "Nintendo Switch OLED",
-        "Deri Ceket (Handmade)", "Gaming Laptop", "Klasik Saat Koleksiyonu", "Kamp Seti (Full)",
-        "Espresso Makinesi", "Kaykay (Custom)", "Tablet Pro 12.9", "Drone (4K Camera)",
-        "Kitap Seti (Nadir)", "Bisiklet (MTB)", "Projektör (Full HD)", "Kulaklık (ANC)"
-    ][i % 16] + ` #${i + 1}`,
-    user: ["Hakan T.", "Selin A.", "Can M.", "Buse G.", "Mert O."][i % 5],
-    location: ["Kadıköy", "Beşiktaş", "Çankaya", "Nilüfer", "Muratpaşa"][i % 5],
-    images: [
-        `https://picsum.photos/seed/${i + 107}/800/1400`,
-        `https://picsum.photos/seed/${i + 207}/800/1400`,
-        `https://picsum.photos/seed/${i + 307}/800/1400`
-    ],
-    likes: Math.floor(Math.random() * 500) + 50,
-    description: "Az kullanılmış, temiz durumda. Takasa uygun teklifler değerlendirilir. Her türlü elektronik eşya ile takas düşünülebilir.",
-    swapFor: ["MacBook", "Oyun Konsolu", "Nakit Üstü", "Üst Model Telefon"][i % 4],
-    date: "2 saat önce",
-    comments: [
-        { user: "Ahmet", text: "PS5 ile takas düşünür müsün?", date: "1s önce" },
-        { user: "Melis", text: "Harika görünüyor, kargo yapabilir misiniz?", date: "45dk önce" }
-    ].slice(0, (i % 3))
-}));
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const fullImg = (u) => !u ? `https://picsum.photos/seed/takason/800/1200` : (u.startsWith('http') ? u : `${apiBase}${u}`);
 
 export default function Discover() {
+    const navigate = useNavigate();
+    const [discoverAds, setDiscoverAds] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const r = await api.getItems({ limit: 30, sort: 'newest' });
+                if (cancelled) return;
+                const items = r.data?.items || r.data || [];
+                setDiscoverAds(items.map((it) => {
+                    const imgs = it.images?.length ? it.images.map((im) => fullImg(im.imageUrl)) : [fullImg(null), fullImg(null), fullImg(null)];
+                    const uname = it.user?.profile ? `${it.user.profile.firstName} ${(it.user.profile.lastName || '').charAt(0)}.` : 'Kullanıcı';
+                    return {
+                        id: it.id,
+                        title: it.title,
+                        user: uname,
+                        userId: it.user?.id,
+                        location: it.location || '—',
+                        images: imgs.length >= 3 ? imgs : [...imgs, ...Array(3 - imgs.length).fill(imgs[0])],
+                        likes: it._count?.favorites || 0,
+                        description: it.description || '',
+                        swapFor: it.swapFor || 'Mantıklı tekliflere açık',
+                        date: new Date(it.createdAt).toLocaleDateString('tr-TR'),
+                        comments: [],
+                    };
+                }));
+            } catch (e) { console.error(e); }
+            finally { if (!cancelled) setLoading(false); }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'feed'
     const [isCommentsOpen, setIsCommentsOpen] = useState(false);
     const [sharingAdId, setSharingAdId] = useState(null); // Tracks which ad's share menu is open

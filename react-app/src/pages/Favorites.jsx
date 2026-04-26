@@ -1,12 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Trash2, Heart, Search, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Favorites() {
-    const favorites = [
-        { id: 2, title: 'Spor Araba', category: 'ARAÇ', tag: 'SIFIR', user: 'Hasan K.', initials: 'H', image: 'https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=400' },
-        { id: 3, title: 'Takaslık Eşya', category: 'GİYİM', tag: 'YENİ GİBİ', user: 'Mehmet Y.', initials: 'M', image: 'https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=400' },
-    ];
+    const { isAuthenticated } = useAuth();
+    const [favorites, setFavorites] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                if (!isAuthenticated) { setFavorites([]); return; }
+                const r = await api.getMyFavorites();
+                if (cancelled) return;
+                setFavorites((r.data || []).map((it) => ({
+                    id: it.id,
+                    title: it.title,
+                    category: it.category?.name?.toUpperCase() || 'GENEL',
+                    tag: it.condition === 'NEW' ? 'SIFIR' : 'YENİ GİBİ',
+                    user: it.user?.profile?.firstName ? `${it.user.profile.firstName} ${(it.user.profile.lastName||'').charAt(0)}.` : 'Kullanıcı',
+                    initials: (it.user?.profile?.firstName?.[0] || 'K').toUpperCase(),
+                    image: it.images?.[0]?.imageUrl || '',
+                })));
+            } catch (e) {
+                console.error(e);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [isAuthenticated]);
 
     const [gridScale, setGridScale] = useState(1);
     const [gridHeight, setGridHeight] = useState(800);
@@ -82,12 +108,20 @@ export default function Favorites() {
                                         <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-stone-50 mb-6">
                                             <img src={ad.image} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
 
-                                            <div
-                                                onClick={(e) => e.preventDefault()}
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    try {
+                                                        await api.toggleFavorite(ad.id);
+                                                        setFavorites((p) => p.filter((x) => x.id !== ad.id));
+                                                    } catch (err) { alert(err.message); }
+                                                }}
                                                 className="absolute top-4 left-4 p-3 bg-white/95 backdrop-blur-md rounded-[1.2rem] text-red-500 shadow-xl hover:scale-110 active:scale-95 transition-all z-10 border border-white cursor-pointer"
+                                                title="Favorilerden kaldır"
                                             >
                                                 <Heart className="w-4 h-4 fill-red-500" />
-                                            </div>
+                                            </button>
 
                                             <div className="absolute top-4 right-4">
                                                 <span className="px-3 py-1.5 bg-stone-900 text-amber-400 rounded-xl text-[9px] font-black tracking-widest uppercase shadow-2xl">

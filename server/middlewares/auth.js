@@ -5,7 +5,7 @@
 
 const jwt = require('jsonwebtoken');
 const jwtConfig = require('../config/jwt');
-const prisma = require('../config/database');
+const { prisma } = require('../config/database');
 const { AppError, asyncHandler } = require('./errorHandler');
 
 // ============================================================

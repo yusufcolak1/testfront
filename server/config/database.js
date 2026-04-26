@@ -1,63 +1,33 @@
 // ============================================================
-// TAKASON - Veritabanı Yapılandırması (Prisma Client)
-// Singleton pattern: Her hot-reload'da yeni bağlantı açılmasını engeller
+// TAKASON - Veritabanı Yapılandırması (Prisma)
 // ============================================================
 
-const { Pool } = require('pg');
+const { PrismaClient } = require('@prisma/client');
 
-// PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-});
+const prisma = new PrismaClient();
 
-// Test connection
-pool.on('connect', () => {
-  console.log('✅ PostgreSQL bağlantısı başarılı');
-});
-
-pool.on('error', (err) => {
-  console.error('❌ PostgreSQL havuz hatası:', err);
-});
-
-// Query helper
-const query = async (text, params) => {
-  const start = Date.now();
+// Geriye dönük uyumluluk için (pg query kullanan servisler için basit bir wrapper)
+const query = async (text, params = []) => {
   try {
-    const res = await pool.query(text, params);
-    const duration = Date.now() - start;
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Executed query', { text, duration, rows: res.rowCount });
-    }
-    return res;
+    const result = await prisma.$queryRawUnsafe(text, ...params);
+    return { rows: Array.isArray(result) ? result : [result], rowCount: Array.isArray(result) ? result.length : 1 };
   } catch (error) {
-    console.error('Query error:', error);
+    console.error('Raw query error:', error);
     throw error;
   }
 };
 
-// Transaction helper
 const transaction = async (callback) => {
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const result = await callback(client);
-    await client.query('COMMIT');
-    return result;
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  return await prisma.$transaction(async (tx) => {
+    const client = {
+      query: async (text, params) => {
+        const result = await tx.$queryRawUnsafe(text, ...(params || []));
+        return { rows: Array.isArray(result) ? result : [result], rowCount: Array.isArray(result) ? result.length : 1 };
+      },
+      release: () => {}
+    };
+    return await callback(client);
+  });
 };
 
-// Graceful shutdown
-process.on('beforeExit', async () => {
-  await pool.end();
-});
-
-module.exports = { pool, query, transaction };
+module.exports = { prisma, query, transaction };

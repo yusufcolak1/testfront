@@ -1,28 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Crown, Star, Award, TrendingUp, Users, Zap, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import api from '../lib/api';
 
 export default function Leaderboard() {
-    // İlk 50 kullanıcıyı temsil eden generator
-    const topTraders = [
-        { rank: 1, name: 'Hasan Kızıltan', swaps: 42, score: 980, medal: '🥇', bio: 'Her eşya bir hikayedir.' },
-        { rank: 2, name: 'Mehmet Yılmaz', swaps: 38, score: 920, medal: '🥈', bio: 'Adil takas, mutlu hayat.' },
-        { rank: 3, name: 'Selin Kaya', swaps: 35, score: 890, medal: '🥉', bio: 'Moda ve elektronik tutkunu.' },
-        { rank: 4, name: 'Ahmet Arı', swaps: 28, score: 750 },
-        { rank: 5, name: 'Zeynep Su', swaps: 24, score: 680 },
-        { rank: 6, name: 'Murat Can', swaps: 19, score: 540 },
-        { rank: 7, name: 'Elif Nur', swaps: 15, score: 420 },
-        { rank: 8, name: 'Canberk Öz', swaps: 14, score: 410 },
-        { rank: 9, name: 'Ece Melis', swaps: 12, score: 395 },
-        { rank: 10, name: 'Bora Yıldız', swaps: 11, score: 380 },
-        // ... Diğerleri (Görsel temsil için 50'ye tamamlayan fonksiyonel mantık)
-        ...Array.from({ length: 40 }, (_, i) => ({
-            rank: i + 11,
-            name: `Üye #${i + 11}`,
-            swaps: Math.floor(Math.random() * 10) + 1,
-            score: 370 - (i * 5)
-        }))
-    ];
+    const [topTraders, setTopTraders] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const r = await api.getLeaderboard(50);
+                if (cancelled) return;
+                setTopTraders((r.data || []).map((u) => ({
+                    rank: u.rank,
+                    name: u.fullName || u.name,
+                    swaps: u.swaps,
+                    score: u.score,
+                    medal: u.medal,
+                    bio: u.bio,
+                })));
+            } catch (e) { console.error(e); }
+            finally { if (!cancelled) setLoading(false); }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     const currentUserRank = 127;
 

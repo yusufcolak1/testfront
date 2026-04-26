@@ -1,55 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ChevronRight, MessageCircle, FileText, User, CreditCard, ShieldCheck, Zap, ArrowLeft, Phone, Mail, Headset, Send, X, MapPin } from 'lucide-react';
+import { Search, ChevronRight, MessageCircle, FileText, User, CreditCard, ShieldCheck, Zap, ArrowLeft, Phone, Mail, Headset, Send, X, MapPin, Box, Activity, Crown, HelpCircle, Shield } from 'lucide-react';
+import api from '../../lib/api';
+
+const iconMap = { User, Zap, FileText, ShieldCheck, CreditCard, MessageCircle, Box, Activity, Crown, HelpCircle, Shield };
 
 export default function HelpCenter() {
-    const [selectedCategory, setSelectedCategory] = React.useState(null);
-    const [isContactOpen, setIsContactOpen] = React.useState(false);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [isContactOpen, setIsContactOpen] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [faqs, setFaqs] = useState([]);
 
-    const categories = [
-        {
-            icon: User,
-            title: 'Hesap & Profil',
-            desc: 'Üyelik, şifre ve profil ayarları.',
-            details: "Profilinizi optimize ederek diğer kullanıcıların size olan güvenini artırın. Bu bölümde şifre sıfırlama, e-posta doğrulama ve profil fotoğrafı güncelleme işlemlerini bulabilirsiniz."
-        },
-        {
-            icon: Zap,
-            title: 'İlan Verme',
-            desc: 'Nasıl ilan verilir? Fotoğraflar vs.',
-            details: "İlanınızın başlığı ve fotoğrafları takas şansınızı %80 artırır. Doğru kategori seçimi ve detaylı açıklama metni yazmanın püf noktalarını burada inceleyin."
-        },
-        {
-            icon: FileText,
-            title: 'Takas Süreci',
-            desc: 'Teklif verme ve kabul etme.',
-            details: "Teklif gönderirken 'Mantıklı Takas' kurallarına uyun. Bu bölümde tekliflerin nasıl değerlendirildiği ve takasın nasıl sonuçlandığı anlatılmaktadır."
-        },
-        {
-            icon: ShieldCheck,
-            title: 'Güvenlik',
-            desc: 'Hesap güvenliği ve dolandırıcılık.',
-            details: "İkinci el takasında güvenlik her şeydir. Dolandırıcılık yöntemlerinden korunma yolları ve şüpheli ilan bildirme süreçlerini buradan öğrenebilirsiniz."
-        },
-        {
-            icon: CreditCard,
-            title: 'Premium Üyelik',
-            desc: 'Avantajlar ve ödeme yöntemleri.',
-            details: "Premium üyeler arama sonuçlarında en üstte görünür. Üyelik paketleri, ödeme güvenliği ve otomatik yenileme iptali hakkında tüm detaylar buradadır."
-        },
-        {
-            icon: MessageCircle,
-            title: 'Mesajlaşma',
-            desc: 'Diğer üyelerle güvenli iletişim.',
-            details: "Platform dışına çıkmadan mesajlaşmak sizi korur. Mesaj bildirimleri, engelleme sistemi ve dosya paylaşımı özelliklerini keşfedin."
-        }
-    ];
-
-    const faqs = [
-        { q: "Takas yapmak ücretli mi?", a: "Hayır, TakasOn üzerinde standart takas işlemleri tamamen ücretsizdir." },
-        { q: "Premium üye olmanın avantajları nelerdir?", a: "İlanlarınızın daha fazla kişiye ulaşmasını sağlar, sınırsız ilan verme hakkı tanır ve size özel rozetler sunar." },
-        { q: "Güvenliğimi nasıl sağlarım?", a: "Takaslarınızı her zaman halka açık yerlerde gerçekleştirmenizi ve ürünleri iyice incelemeden işlemi onaylamamanızı öneririz." }
-    ];
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const [cR, fR] = await Promise.all([api.getHelpCategories(), api.getFaqs()]);
+                if (cancelled) return;
+                setCategories((cR.data || []).map((c) => ({
+                    icon: iconMap[c.icon] || HelpCircle,
+                    title: c.title,
+                    desc: c.description,
+                    details: c.description,
+                })));
+                setFaqs((fR.data || []).map((f) => ({ q: f.question, a: f.answer })));
+            } catch (e) { console.error(e); }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#f5f1ed] pb-12 md:pb-24 relative">
