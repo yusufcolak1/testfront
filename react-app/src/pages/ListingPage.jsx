@@ -1,36 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Search, Filter, ArrowRight, MapPin, Zap, ChevronDown, LayoutGrid, List, SlidersHorizontal, Package, Star, Calendar, Clock, X, Settings2, Box, ShieldCheck } from 'lucide-react';
+import { Search, Filter, ArrowRight, MapPin, Zap, ChevronDown, LayoutGrid, List, SlidersHorizontal, Package, Star, Calendar, Clock, X, Settings2, Box, ShieldCheck, Loader2 } from 'lucide-react';
+import api from '../lib/api';
 
 export default function ListingPage({ title: initialTitle }) {
     const location = useLocation();
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [viewMode, setViewMode] = useState('grid');
     const [title, setTitle] = useState(initialTitle || "Tüm İlanlar");
+    const [loading, setLoading] = useState(true);
+    const [products, setProducts] = useState([]);
     const [filters, setFilters] = useState({
         konum: 'Tümü', durum: 'Tümü', takas: 'Tümü', tarih: 'Tümü'
     });
 
     useEffect(() => {
-        if (location.pathname.includes('one-cikan')) setTitle("Öne Çıkan İlanlar");
-        else if (location.pathname.includes('populer')) setTitle("Popüler İlanlar");
-        else setTitle("Son İlanlar");
-    }, [location]);
+        let sc = false;
+        setLoading(true);
+        (async () => {
+            try {
+                let params = { limit: 40 };
+                if (location.pathname.includes('one-cikan')) {
+                    setTitle("Öne Çıkan İlanlar");
+                    params.isFeatured = true;
+                } else if (location.pathname.includes('populer')) {
+                    setTitle("Popüler İlanlar");
+                    params.isPopular = true;
+                } else {
+                    setTitle("Son İlanlar");
+                }
 
-    // 30 adet örnek ürün verisi
-    const products = Array.from({ length: 30 }, (_, i) => ({
-        id: i + 100,
-        title: [
-            "MacBook Pro M3", "Elektro Gitar", "Deri Ceket", "Vintage Kamera",
-            "Oyun Konsolu", "Bisiklet", "Saat Koleksiyonu", "Tablet Pro"
-        ][i % 8] + ` #${i + 1}`,
-        category: ["ELEKTRONİK", "MÜZİK", "GİYİM", "HOBİ", "SPOR"][i % 5],
-        tag: ["YENİ GİBİ", "SIFIR", "AZ KULLANILMIŞ", "NADİR"][i % 4],
-        user: ["Ahmet V.", "Selin K.", "Can M.", "Buse G."][i % 4],
-        initials: ["A", "S", "C", "B"][i % 4],
-        image: `https://picsum.photos/seed/${i + 450}/600/800`,
-        location: ["İstanbul", "Ankara", "İzmir", "Bursa"][i % 4]
-    }));
+                const r = await api.getItems(params);
+                if (sc) return;
+                setProducts(r.data || []);
+            } catch (e) { console.error(e); }
+            finally { if (!sc) setLoading(false); }
+        })();
+        return () => { sc = true; };
+    }, [location.pathname]);
 
     return (
         <div className="min-h-screen bg-[#f5f1ed] pb-32">
@@ -151,46 +158,67 @@ export default function ListingPage({ title: initialTitle }) {
 
             {/* Products Grid */}
             <div className="container mx-auto px-6 mt-6">
-                <div className={`grid gap-6 md:gap-8 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
-                    {products.map((ad, idx) => (
-                        <Link
-                            to={`/ilan/${ad.id}`}
-                            key={idx}
-                            className={`group bg-white rounded-[2.5rem] p-4 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 border border-stone-50 flex ${viewMode === 'list' ? 'flex-row gap-8 items-center h-48' : 'flex-col'}`}
-                        >
-                            <div className={`relative overflow-hidden rounded-[2rem] bg-stone-50 ${viewMode === 'list' ? 'w-48 h-full shrink-0' : 'aspect-[4/5] mb-6'}`}>
-                                <img src={ad.image} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                <div className="absolute top-4 left-4">
-                                    <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-lg text-[8px] font-black tracking-widest text-stone-900 uppercase">
-                                        {ad.tag}
-                                    </span>
-                                </div>
-                            </div>
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <Loader2 className="w-12 h-12 text-[#4a2008] animate-spin" />
+                        <p className="text-stone-400 font-serif italic uppercase tracking-widest text-xs">İlanlar Getiriliyor...</p>
+                    </div>
+                ) : products.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <Package className="w-12 h-12 text-stone-200" />
+                        <p className="text-stone-400 font-serif italic text-lg">Bu grupta henüz ilan bulunmuyor.</p>
+                    </div>
+                ) : (
+                    <div className={`grid gap-6 md:gap-8 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
+                        {products.map((ad, idx) => {
+                            const img = ad.images?.[0]?.imageUrl;
+                            const fullImg = img ? (img.startsWith('http') ? img : `http://localhost:5000${img}`) : 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400';
+                            const userName = ad.user?.profile?.firstName || 'Kullanıcı';
+                            const categoryName = ad.category?.name || 'GENEL';
 
-                            <div className="flex-1 px-2 space-y-4">
-                                <div>
-                                    <span className="text-[9px] font-black tracking-widest text-stone-400 uppercase mb-1 block">{ad.category}</span>
-                                    <h4 className="text-xl font-serif text-stone-900 italic font-bold group-hover:text-[#4a2008] transition-colors leading-tight">{ad.title}</h4>
-                                </div>
-                                <div className="flex items-center justify-between pt-4 border-t border-stone-50">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-stone-900 text-white flex items-center justify-center text-[10px] font-black italic">{ad.initials}</div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-stone-900">{ad.user}</span>
-                                            <div className="flex items-center gap-1 text-stone-400">
-                                                <MapPin className="w-2 h-2" />
-                                                <span className="text-[8px] font-bold uppercase tracking-tighter">{ad.location}</span>
+                            return (
+                                <Link
+                                    to={`/ilan/${ad.id}`}
+                                    key={ad.id}
+                                    className={`group bg-white rounded-[2.5rem] p-4 transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 border border-stone-50 flex ${viewMode === 'list' ? 'flex-row gap-8 items-center h-48' : 'flex-col'}`}
+                                >
+                                    <div className={`relative overflow-hidden rounded-[2rem] bg-stone-50 ${viewMode === 'list' ? 'w-48 h-full shrink-0' : 'aspect-[4/5] mb-6'}`}>
+                                        <img src={fullImg} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        {(ad.tag || ad.condition) && (
+                                            <div className="absolute top-4 left-4">
+                                                <span className="px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-lg text-[8px] font-black tracking-widest text-stone-900 uppercase">
+                                                    {ad.tag || ad.condition}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex-1 px-2 space-y-4">
+                                        <div>
+                                            <span className="text-[9px] font-black tracking-widest text-stone-400 uppercase mb-1 block">{categoryName}</span>
+                                            <h4 className="text-xl font-serif text-stone-900 italic font-bold group-hover:text-[#4a2008] transition-colors leading-tight">{ad.title}</h4>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-4 border-t border-stone-50">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-stone-900 text-white flex items-center justify-center text-[10px] font-black italic">{userName[0]}</div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-bold text-stone-900">@{userName.toLowerCase()}</span>
+                                                    <div className="flex items-center gap-1 text-stone-400">
+                                                        <MapPin className="w-2 h-2" />
+                                                        <span className="text-[8px] font-bold uppercase tracking-tighter">{ad.location || '—'}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-stone-900 group-hover:scale-110 transition-transform">
+                                                <ArrowRight className="w-4 h-4" />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-stone-900 group-hover:scale-110 transition-transform">
-                                        <ArrowRight className="w-4 h-4" />
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* Pagination (Visual only) */}
                 <div className="mt-20 flex justify-center items-center gap-2">

@@ -24,15 +24,18 @@ export default function Home() {
 
     // Fetch items and settings from backend API
     useEffect(() => {
+        let sc = false;
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [itemsRes, featuredRes, popularRes, settingsRes] = await Promise.all([
-                    api.getItems({ limit: 4, sort: 'newest' }),
-                    api.getItems({ limit: 4, isFeatured: 'true' }),
-                    api.getItems({ limit: 4, isPopular: 'true' }),
+                const [newestRes, featuredRes, popularRes, settingsRes] = await Promise.all([
+                    api.getItems({ limit: 40, sort: 'newest' }),
+                    api.getItems({ limit: 40, isFeatured: 'true' }),
+                    api.getItems({ limit: 40, isPopular: 'true' }),
                     api.getPublicSettings()
                 ]);
+
+                if (sc) return;
 
                 const transform = (items) => (items || []).map(item => ({
                     id: item.id,
@@ -41,21 +44,22 @@ export default function Home() {
                     tag: item.tag || (item.condition === 'NEW' ? 'SIFIR' : 'YENİ GİBİ'),
                     user: item.user?.profile?.firstName || 'Kullanıcı',
                     initials: (item.user?.profile?.firstName?.[0] || 'K').toUpperCase(),
-                    image: item.images?.find(img => img.isPrimary)?.imageUrl || item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400'
+                    image: item.images?.find(img => img.isPrimary)?.imageUrl || item.images?.[0]?.imageUrl || 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400',
+                    location: item.location
                 }));
 
-                setAds(transform(itemsRes.data?.items));
-                setFeaturedAdsData(transform(featuredRes.data?.items));
-                setPopularAdsData(transform(popularRes.data?.items));
+                setAds(transform(newestRes.data));
+                setFeaturedAdsData(transform(featuredRes.data));
+                setPopularAdsData(transform(popularRes.data));
                 setSettings(settingsRes.data || {});
             } catch (error) {
                 console.error('Veriler yüklenirken hata:', error);
             } finally {
-                setLoading(false);
+                if (!sc) setLoading(false);
             }
         };
-        
         fetchData();
+        return () => { sc = true; };
     }, []);
 
 

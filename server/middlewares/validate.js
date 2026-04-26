@@ -16,6 +16,7 @@ const validate = (schema) => (req, res, next) => {
     next();
   } catch (err) {
     if (err instanceof ZodError) {
+      console.log('🔴 Validation Error:', JSON.stringify(err.errors, null, 2));
       return next(err); // errorHandler'a gönder
     }
     next(err);

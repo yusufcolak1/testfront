@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { LayoutGrid, Filter, Search, ArrowRight, Zap, MapPin, Star, Heart, SlidersHorizontal, ChevronDown, X, Check, Calendar, Box, ShieldCheck, Navigation, Info, Settings2, Clock } from 'lucide-react';
+import { LayoutGrid, Filter, Search, ArrowRight, Zap, MapPin, Star, Heart, SlidersHorizontal, ChevronDown, X, Check, Calendar, Box, ShieldCheck, Navigation, Info, Settings2, Clock, Loader2 } from 'lucide-react';
+import api from '../lib/api';
 
 export default function CategoryPage() {
     const { slug } = useParams();
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [categoryProducts, setCategoryProducts] = useState([]);
+    const [categoryName, setCategoryName] = useState(slug ? slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ') : 'Kategori');
 
     const [filters, setFilters] = useState({
         location: 'Tümü',
@@ -13,20 +17,24 @@ export default function CategoryPage() {
         time: 'Tümü'
     });
 
-    const categoryName = slug ? slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ') : 'Kategori';
+    useEffect(() => {
+        let sc = false;
+        setLoading(true);
+        (async () => {
+            try {
+                // Önce kategoriyi bulup ismini alalım
+                const cats = await api.getCategories();
+                const matched = cats.data?.find(c => c.slug === slug);
+                if (matched) setCategoryName(matched.name);
 
-    const categoryProducts = Array.from({ length: 24 }, (_, i) => ({
-        id: i + 1,
-        title: [
-            "Retro Amfi", "MacBook Pro M1", "Deri Çanta", "Elektro Gitar",
-            "Akıllı Saat", "Kitap Seti", "Tablo (Yağlı Boya)", "Kamp Sandalyesi"
-        ][i % 8] + ` #${i + 1}`,
-        location: ["Kadıköy", "Beşiktaş", "Çankaya", "Nilüfer", "Bornova"][i % 5],
-        image: `https://picsum.photos/seed/${slug}-${i + 50}/600/800`,
-        likes: Math.floor(Math.random() * 300) + 20,
-        user: ["Hakan", "Selin", "Can", "Buse", "Mert"][i % 5],
-        isUrgent: i % 7 === 0
-    }));
+                const r = await api.getItems({ categorySlug: slug, limit: 40 });
+                if (sc) return;
+                setCategoryProducts(r.data || []);
+            } catch (e) { console.error(e); }
+            finally { if (!sc) setLoading(false); }
+        })();
+        return () => { sc = true; };
+    }, [slug]);
 
     const filterOptions = {
         location: ['Tümü', 'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya'],
@@ -127,7 +135,7 @@ export default function CategoryPage() {
                                 <Settings2 className="w-5 h-5 group-hover:rotate-180 transition-transform" /> FİLTRELE
                             </button>
                             <div className="bg-stone-50 px-6 md:px-10 py-4 md:py-5 rounded-[1.5rem] md:rounded-[2rem] border border-stone-100 shadow-sm flex items-center gap-3">
-                                <span className="text-2xl md:text-3xl font-serif font-black text-stone-900">24</span>
+                                <span className="text-2xl md:text-3xl font-serif font-black text-stone-900">{categoryProducts.length}</span>
                                 <span className="text-[10px] font-black text-stone-400 tracking-widest uppercase">İLAN</span>
                             </div>
                         </div>
@@ -137,51 +145,69 @@ export default function CategoryPage() {
 
             {/* Category Products Grid */}
             <div className="container mx-auto px-4 md:px-6 py-8 md:py-12 max-w-7xl animate-in fade-in duration-1000">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
-                    {categoryProducts.map((product) => (
-                        <Link to={`/ilan/${product.id}`} key={product.id} className="group relative bg-white rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-stone-100 flex flex-col cursor-pointer">
-                            {/* Product Image */}
-                            <div className="relative aspect-[4/5] rounded-xl md:rounded-[2rem] overflow-hidden mb-3 md:mb-6">
-                                <img src={product.image} alt={product.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                {product.isUrgent && (
-                                    <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-red-500 text-white text-[7px] md:text-[8px] font-black px-2 py-1 md:px-3 md:py-1.5 rounded-full tracking-widest uppercase shadow-lg animate-pulse">
-                                        ACİL
-                                    </div>
-                                )}
-                                <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="absolute top-2 right-2 md:top-4 md:right-4 w-7 h-7 md:w-9 md:h-9 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white hover:text-red-500 transition-all shadow-xl z-20">
-                                    <Heart className="w-3 h-3 md:w-4 md:h-4 transition-colors" />
-                                </button>
-                                <div className="absolute inset-x-2 bottom-2 md:inset-x-4 md:bottom-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                                    <div className="w-full bg-stone-900 text-amber-400 py-2 md:py-4 rounded-xl md:rounded-2xl font-black text-[8px] md:text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 shadow-2xl">
-                                        İNCELE <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
-                                    </div>
-                                </div>
-                            </div>
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <Loader2 className="w-12 h-12 text-[#4a2008] animate-spin" />
+                        <p className="text-stone-400 font-serif italic uppercase tracking-widest text-xs">Yükleniyor...</p>
+                    </div>
+                ) : categoryProducts.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <Box className="w-12 h-12 text-stone-200" />
+                        <p className="text-stone-400 font-serif italic text-lg">Bu kategoride henüz ilan bulunmuyor.</p>
+                        <Link to="/ilan-ver" className="bg-stone-900 text-white px-8 py-3 rounded-xl font-black text-[10px] tracking-widest uppercase">İLK İLANI SEN VER</Link>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+                        {categoryProducts.map((product) => {
+                            const img = product.images?.[0]?.imageUrl;
+                            const fullImg = img ? (img.startsWith('http') ? img : `http://localhost:5000${img}`) : 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400';
+                            const userName = product.user?.profile?.firstName || 'Kullanıcı';
 
-                            {/* Product Info */}
-                            <div className="px-1 md:px-2 pb-1 md:pb-2 space-y-1.5 md:space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1 md:gap-2 min-w-0">
-                                        <div className="w-4 h-4 md:w-5 md:h-5 rounded bg-amber-500 flex items-center justify-center text-stone-900 font-black italic text-[7px] md:text-[8px] shrink-0">{product.user[0]}</div>
-                                        <span className="text-[8px] md:text-[9px] font-black text-stone-400 tracking-widest uppercase italic truncate">@{product.user.toLowerCase()}</span>
+                            return (
+                                <Link to={`/ilan/${product.id}`} key={product.id} className="group relative bg-white rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-stone-100 flex flex-col cursor-pointer">
+                                    {/* Product Image */}
+                                    <div className="relative aspect-[4/5] rounded-xl md:rounded-[2rem] overflow-hidden mb-3 md:mb-6 bg-stone-50">
+                                        <img src={fullImg} alt={product.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        {product.isFeatured && (
+                                            <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-amber-500 text-stone-900 text-[7px] md:text-[8px] font-black px-2 py-1 md:px-3 md:py-1.5 rounded-full tracking-widest uppercase shadow-lg">
+                                                ÖNE ÇIKAN
+                                            </div>
+                                        )}
+                                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} className="absolute top-2 right-2 md:top-4 md:right-4 w-7 h-7 md:w-9 md:h-9 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white hover:text-red-500 transition-all shadow-xl z-20">
+                                            <Heart className="w-3 h-3 md:w-4 md:h-4 transition-colors" />
+                                        </button>
+                                        <div className="absolute inset-x-2 bottom-2 md:inset-x-4 md:bottom-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                                            <div className="w-full bg-stone-900 text-amber-400 py-2 md:py-4 rounded-xl md:rounded-2xl font-black text-[8px] md:text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 shadow-2xl">
+                                                İNCELE <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-1 text-stone-400">
-                                        <MapPin className="w-2.5 h-2.5 md:w-3 md:h-3 text-[#4a2008]" />
-                                        <span className="text-[8px] md:text-[9px] font-black uppercase tracking-tight">{product.location}</span>
+
+                                    {/* Product Info */}
+                                    <div className="px-1 md:px-2 pb-1 md:pb-2 space-y-1.5 md:space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1 md:gap-2 min-w-0">
+                                                <div className="w-4 h-4 md:w-5 md:h-5 rounded bg-amber-500 flex items-center justify-center text-stone-900 font-black italic text-[7px] md:text-[8px] shrink-0">{userName[0]}</div>
+                                                <span className="text-[8px] md:text-[9px] font-black text-stone-400 tracking-widest uppercase italic truncate">@{userName.toLowerCase()}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-stone-400">
+                                                <MapPin className="w-2.5 h-2.5 md:w-3 md:h-3 text-[#4a2008]" />
+                                                <span className="text-[8px] md:text-[9px] font-black uppercase tracking-tight">{product.location || '—'}</span>
+                                            </div>
+                                        </div>
+                                        <h3 className="text-[12px] md:text-lg font-serif italic font-black text-stone-900 leading-tight group-hover:text-[#4a2008] transition-colors uppercase pr-1 line-clamp-1">{product.title}</h3>
+                                        <div className="flex items-center pt-1 md:pt-2 border-t border-stone-50">
+                                            <div className="flex items-center gap-1">
+                                                <Star className="w-2.5 h-2.5 md:w-3 md:h-3 text-[#4a2008] fill-current" />
+                                                <span className="text-[8px] md:text-[9px] font-black text-stone-900">{product.viewCount || 0} Gözlem</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <h3 className="text-[12px] md:text-lg font-serif italic font-black text-stone-900 leading-tight group-hover:text-[#4a2008] transition-colors uppercase pr-1 line-clamp-1">{product.title}</h3>
-                                <div className="flex items-center gap-3 pt-1 md:pt-2 border-t border-stone-50">
-                                    <div className="flex items-center gap-1">
-                                        <Star className="w-2.5 h-2.5 md:w-3 md:h-3 text-[#4a2008] fill-current" />
-                                        <span className="text-[8px] md:text-[9px] font-black text-stone-900">4.9</span>
-                                    </div>
-                                    <span className="text-[8px] md:text-[10px] font-black text-stone-100 uppercase tracking-widest opacity-0 group-hover:opacity-100 group-hover:text-stone-400 transition-all">{product.likes} BEĞENİ</span>
-                                </div>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );

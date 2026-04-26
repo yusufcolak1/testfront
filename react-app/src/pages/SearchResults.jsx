@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Search, MapPin, Box, Zap, Clock, Star, Heart, ArrowRight, Settings2, X, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Search, MapPin, Box, Zap, Clock, Star, Heart, ArrowRight, Settings2, X, ShieldCheck, ArrowLeft, Loader2 } from 'lucide-react';
+import api from '../lib/api';
 
 export default function SearchResults() {
     const [searchParams] = useSearchParams();
     const query = searchParams.get('q') || '';
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [searchResults, setSearchResults] = useState([]);
 
     const [filters, setFilters] = useState({
         location: 'Tümü',
@@ -14,17 +17,19 @@ export default function SearchResults() {
         time: 'Tümü'
     });
 
-    // Örnek arama sonuçları
-    const searchResults = Array.from({ length: 12 }, (_, i) => ({
-        id: i + 100,
-        title: query + (i === 0 ? "" : ` Model ${i + 1}`),
-        category: ["ELEKTRONİK", "MOBİLYA", "GİYİM", "MÜZİK"][i % 4],
-        location: ["Kadıköy", "Beşiktaş", "Çankaya", "Bornova"][i % 4],
-        image: `https://picsum.photos/seed/search-${i + 10}/600/800`,
-        likes: Math.floor(Math.random() * 500) + 50,
-        user: ["Ahmet", "Buse", "Can", "Deniz"][i % 4],
-        isFeatured: i === 0
-    }));
+    useEffect(() => {
+        let sc = false;
+        setLoading(true);
+        (async () => {
+            try {
+                const r = await api.getItems({ q: query, limit: 40 });
+                if (sc) return;
+                setSearchResults(r.data || []);
+            } catch (e) { console.error(e); }
+            finally { if (!sc) setLoading(false); }
+        })();
+        return () => { sc = true; };
+    }, [query]);
 
     const filterOptions = {
         location: ['Tümü', 'İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya'],
@@ -131,48 +136,68 @@ export default function SearchResults() {
 
             {/* Results Grid */}
             <div className="container mx-auto px-4 md:px-6 py-6 md:py-8 max-w-7xl animate-in fade-in duration-1000">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-                    {searchResults.map((product) => (
-                        <Link to={`/ilan/${product.id}`} key={product.id} className="group relative bg-white rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-stone-100 flex flex-col cursor-pointer">
-                            <div className="relative aspect-[4/5] rounded-xl md:rounded-[2rem] overflow-hidden mb-3 md:mb-6">
-                                <img src={product.image} alt={product.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                {product.isFeatured && (
-                                    <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-amber-500 text-stone-900 text-[7px] md:text-[8px] font-black px-2 py-1 md:px-4 md:py-2 rounded-lg md:rounded-xl tracking-widest uppercase shadow-lg">
-                                        ÖNE ÇIKARILAN
-                                    </div>
-                                )}
-                                <button className="absolute top-2 right-2 md:top-4 right-4 w-7 h-7 md:w-9 md:h-9 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white hover:text-red-500 transition-all shadow-xl">
-                                    <Heart className="w-3 h-3 md:w-4 md:h-4 transition-colors" />
-                                </button>
-                                <div className="absolute inset-x-2 bottom-2 md:inset-x-4 md:bottom-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
-                                    <div className="w-full bg-stone-900 text-amber-400 py-2 md:py-4 rounded-xl md:rounded-2xl font-black text-[8px] md:text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 shadow-2xl">
-                                        İNCELE <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
-                                    </div>
-                                </div>
-                            </div>
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <Loader2 className="w-12 h-12 text-[#4a2008] animate-spin" />
+                        <p className="text-stone-400 font-serif italic uppercase tracking-widest text-xs">Sonuçlar Getiriliyor...</p>
+                    </div>
+                ) : searchResults.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                        <Search className="w-12 h-12 text-stone-200" />
+                        <p className="text-stone-400 font-serif italic text-lg">"{query}" için bir ilan bulamadık.</p>
+                        <button onClick={() => window.history.back()} className="text-stone-900 font-black text-xs uppercase tracking-widest border-b border-stone-900 pb-1">Geri Dön</button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+                        {searchResults.map((product) => {
+                            const img = product.images?.[0]?.imageUrl;
+                            const fullImg = img ? (img.startsWith('http') ? img : `http://localhost:5000${img}`) : 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400';
+                            const categoryName = product.category?.name || 'GENEL';
+                            const userName = product.user?.profile?.firstName || 'Kullanıcı';
 
-                            <div className="px-1 md:px-2 pb-1 md:pb-2 space-y-1.5 md:space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-1 md:gap-2 min-w-0">
-                                        <div className="w-4 h-4 md:w-5 md:h-5 rounded bg-[#4a2008] flex items-center justify-center text-[#FFF8E7] font-black italic text-[7px] md:text-[8px] shrink-0">{product.category[0]}</div>
-                                        <span className="text-[8px] md:text-[9px] font-black text-[#4a2008] tracking-widest uppercase italic truncate">{product.category}</span>
+                            return (
+                                <Link to={`/ilan/${product.id}`} key={product.id} className="group relative bg-white rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-stone-100 flex flex-col cursor-pointer">
+                                    <div className="relative aspect-[4/5] rounded-xl md:rounded-[2rem] overflow-hidden mb-3 md:mb-6 bg-stone-50">
+                                        <img src={fullImg} alt={product.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        {product.isFeatured && (
+                                            <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-amber-500 text-stone-900 text-[7px] md:text-[8px] font-black px-2 py-1 md:px-4 md:py-2 rounded-lg md:rounded-xl tracking-widest uppercase shadow-lg">
+                                                ÖNE ÇIKARILAN
+                                            </div>
+                                        )}
+                                        <button className="absolute top-2 right-2 md:top-4 right-4 w-7 h-7 md:w-9 md:h-9 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-white hover:text-red-500 transition-all shadow-xl">
+                                            <Heart className="w-3 h-3 md:w-4 md:h-4 transition-colors" />
+                                        </button>
+                                        <div className="absolute inset-x-2 bottom-2 md:inset-x-4 md:bottom-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                                            <div className="w-full bg-stone-900 text-amber-400 py-2 md:py-4 rounded-xl md:rounded-2xl font-black text-[8px] md:text-[10px] tracking-widest uppercase flex items-center justify-center gap-2 shadow-2xl">
+                                                İNCELE <ArrowRight className="w-3 h-3 md:w-4 md:h-4" />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-1 text-stone-400">
-                                        <MapPin className="w-2.5 h-2.5 md:w-3 md:h-3 text-[#4a2008]" />
-                                        <span className="text-[8px] md:text-[9px] font-black uppercase tracking-tight">{product.location}</span>
+
+                                    <div className="px-1 md:px-2 pb-1 md:pb-2 space-y-1.5 md:space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1 md:gap-2 min-w-0">
+                                                <div className="w-4 h-4 md:w-5 md:h-5 rounded bg-[#4a2008] flex items-center justify-center text-[#FFF8E7] font-black italic text-[7px] md:text-[8px] shrink-0">{categoryName[0]}</div>
+                                                <span className="text-[8px] md:text-[9px] font-black text-[#4a2008] tracking-widest uppercase italic truncate">{categoryName}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-stone-400">
+                                                <MapPin className="w-2.5 h-2.5 md:w-3 md:h-3 text-[#4a2008]" />
+                                                <span className="text-[8px] md:text-[9px] font-black uppercase tracking-tight">{product.location || '—'}</span>
+                                            </div>
+                                        </div>
+                                        <h3 className="text-[12px] md:text-lg font-serif italic font-black text-stone-900 leading-tight group-hover:text-[#4a2008] transition-colors uppercase pr-1 truncate">{product.title}</h3>
+                                        <div className="flex items-center gap-3 pt-1 md:pt-2 border-t border-stone-50">
+                                            <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+                                                <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 font-black text-[7px] md:text-[8px] shrink-0">{userName[0]}</div>
+                                                <span className="text-[8px] md:text-[9px] font-black text-stone-400 uppercase tracking-widest truncate">@{userName.toLowerCase()}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <h3 className="text-[12px] md:text-lg font-serif italic font-black text-stone-900 leading-tight group-hover:text-[#4a2008] transition-colors uppercase pr-1 truncate">{product.title}</h3>
-                                <div className="flex items-center gap-3 pt-1 md:pt-2 border-t border-stone-50">
-                                    <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
-                                        <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 font-black text-[7px] md:text-[8px] shrink-0">{product.user[0]}</div>
-                                        <span className="text-[8px] md:text-[9px] font-black text-stone-400 uppercase tracking-widest truncate">@{product.user.toLowerCase()}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );

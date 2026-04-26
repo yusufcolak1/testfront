@@ -14,12 +14,8 @@ const registerSchema = z.object({
 
   password: z
     .string({ required_error: 'Şifre zorunludur.' })
-    .min(8, 'Şifre en az 8 karakter olmalıdır.')
-    .max(128, 'Şifre en fazla 128 karakter olabilir.')
-    .regex(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      'Şifre en az bir büyük harf, bir küçük harf ve bir rakam içermelidir.'
-    ),
+    .min(6, 'Şifre en az 6 karakter olmalıdır.')
+    .max(128, 'Şifre en fazla 128 karakter olabilir.'),
 
   firstName: z
     .string({ required_error: 'Ad zorunludur.' })
@@ -33,8 +29,8 @@ const registerSchema = z.object({
     .max(50, 'Soyad en fazla 50 karakter olabilir.')
     .trim(),
 
-  phone: z.string().optional(),
-  city: z.string().optional(),
+  phone: z.string().optional().nullable(),
+  city: z.string().optional().nullable(),
 });
 
 // Giriş yap

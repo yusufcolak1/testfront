@@ -21,8 +21,8 @@ const getItems = async (query) => {
   if (query.categoryId) where.categoryId = query.categoryId;
   if (query.condition) where.condition = query.condition;
   if (query.city) where.location = { contains: query.city };
-  if (query.isFeatured !== undefined) where.isFeatured = query.isFeatured;
-  if (query.isPopular !== undefined) where.isPopular = query.isPopular;
+  if (query.isFeatured !== undefined) where.isFeatured = query.isFeatured === 'true';
+  if (query.isPopular !== undefined) where.isPopular = query.isPopular === 'true';
   if (query.search) {
     where.OR = [
       { title: { contains: query.search } },

@@ -25,6 +25,7 @@ class AppError extends Error {
 // Zod Validasyon Hatalarını Düzenle
 // ============================================================
 const formatZodErrors = (error) => {
+  if (!error.errors) return [];
   return error.errors.map((err) => ({
     field: err.path.join('.'),
     message: err.message,
@@ -75,8 +76,8 @@ const errorHandler = (err, req, res, next) => {
   // ---- Zod Validasyon Hatası ----
   if (err instanceof ZodError) {
     statusCode = 422;
-    message = 'Girilen veriler geçersiz.';
     errors = formatZodErrors(err);
+    message = errors[0]?.message || 'Girilen veriler geçersiz.';
   }
 
   // ---- Prisma Veritabanı Hataları ----

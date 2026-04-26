@@ -216,6 +216,21 @@ const siteSettings = [
 async function main() {
   console.log('🌱 Seed verisi yükleniyor...');
 
+  // 0. CLEANUP (Önce temizle)
+  console.log('  → Ön temizlik...');
+  await prisma.notification.deleteMany({});
+  await prisma.message.deleteMany({});
+  await prisma.chatRoom.deleteMany({});
+  await prisma.favorite.deleteMany({});
+  await prisma.tradeItem.deleteMany({});
+  await prisma.trade.deleteMany({});
+  await prisma.itemImage.deleteMany({});
+  await prisma.item.deleteMany({});
+  await prisma.address.deleteMany({});
+  await prisma.profile.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.category.deleteMany({});
+
   // 1. CATEGORIES
   console.log('  → Kategoriler...');
   for (const cat of categories) {
