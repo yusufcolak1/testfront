@@ -1,0 +1,3 @@
+id,user_id,first_name,last_name,phone,city,district,avatar_url,trust_score,bio,premium_until,created_at,updated_at
+p1,d290f1ee-6c54-4b01-90e6-d701748f0851,Admin,Takason,5551234567,İstanbul,Kadıköy,,100,Sistem Yöneticisi,,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z
+p2,d290f1ee-6c54-4b01-90e6-d701748f0852,Test,Kullanıcı,5559876543,Ankara,Çankaya,,50,Deneme hesabı.,,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z

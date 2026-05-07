@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TakasOn - Her Eşya Bir Şansı Hak Eder</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (CDN for Vanilla) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- GSAP & Three.js Importmap -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <!-- Tailwind Configuration for Claymorphism Tokens -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'stone-bg': '#b8ab9a',      // Daha koyu, mağaramsı kaya rengi
+                        'stone-text': '#332c24',    // Daha derin, kömürsü kahve
+                        'stone-muted': '#6b5f54',   // Taş tozu grisi/kahvesi
+                        'stone-highlight': '#c4533b', // Mağara ateşine benzer terracotta
+                    },
+                    fontFamily: {
+                        'serif': ['Lora', 'serif'],
+                        'sans': ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        // Koyu taş rengine uyarlanmış derin yontulmuş kaya gölgeleri
+                        'clay': '7px 7px 14px #9c9183, -7px -7px 14px #d4c5b1',
+                        'clay-hover': '9px 9px 18px #9c9183, -9px -9px 18px #d4c5b1',
+                        'clay-inset': 'inset 5px 5px 10px #9c9183, inset -5px -5px 10px #d4c5b1',
+                        'clay-sm': '3px 3px 6px #9c9183, -3px -3px 6px #d4c5b1',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Global Styles & Textures */
+        body {
+            background-color: #b8ab9a;
+            color: #332c24;
+            font-family: 'Inter', sans-serif;
+            /* Derin mağara atmosferi: Üstte meşale aydınlığı, altta kaya zemin griliği + Organik gürültü duvar dokusu */
+            background-image: 
+                radial-gradient(circle at 70% top, rgba(230, 215, 195, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at bottom left, rgba(60, 50, 40, 0.2) 0%, transparent 50%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.16'/%3E%3C/svg%3E");
+            background-attachment: fixed;
+        }
+        
+        /* Arayüz elemanlarına pürüzlü taş dokusu giydirme */
+        .clay-btn, .clay-card, header, .rounded-full, .shadow-clay-inset {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+        }
+
+        h1, h2, h3, h4, .font-serif {
+            font-family: 'Lora', serif;
+        }
+
+        /* 
+           Clay Button Interactive States 
+           When clicked, the button squishes into the stone (inset shadow)
+        */
+        .clay-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .clay-btn:active {
+            box-shadow: inset 4px 4px 8px #9c9183, inset -4px -4px 8px #d4c5b1 !important;
+            transform: translateY(2px);
+        }
+
+        /* Hide scrollbar for category pill scroller */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Product Image Engraving */
+        .image-engrave {
+            box-shadow: inset 6px 6px 12px rgba(80, 70, 60, 0.5), inset -6px -6px 12px rgba(230, 215, 195, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #a39585; /* Sert/Koyu yontuk kayalık oyuğu hissi */
+        }
+        
+        /* Top Navigation Bar Rough Edge Simulation */
+        .header-rough-border {
+            border-bottom: 2px solid #a39585;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Organic Stone Cards */
+        .clay-card {
+            border-radius: 4px 12px 6px 16px / 12px 6px 16px 4px;
+            position: relative;
+        }
+        .clay-card::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: inherit;
+            pointer-events: none;
+            box-shadow: inset 1px 2px 3px rgba(255, 255, 255, 0.6), inset -1px -2px 3px rgba(100, 90, 80, 0.3);
+            z-index: 1;
+        }
+
+        /* Intro Sequence Animations */
+        #loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Lora', serif;
+            font-size: 1.5rem;
+            color: #4a4036;
+            z-index: 50;
+            transition: opacity 0.5s ease;
+        }
+        
+        .dust-particle {
+            position: fixed;
+            background: rgba(228, 217, 200, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 4;
+            filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="min-h-screen relative" style="overflow-x: hidden;">
+
+    <div id="canvas-container" class="fixed inset-0 z-0" style="pointer-events: none;"></div>
+
+
+    <!-- UI Container (Hidden initially for Intro Sequence) -->
+    <div id="ui-container" style="position:fixed; top:110vh; left:0; width:100%; opacity:0; pointer-events:none; z-index:10; overflow:hidden;">
+
+    <!-- HEADER -->
+    <header class="container mx-auto px-6 py-4 flex items-center justify-between header-rough-border mb-16 rounded-xl bg-stone-bg/80 backdrop-blur-sm shadow-clay-sm">
+        <div class="flex items-center gap-4">
+            <!-- Stone Logo Placeholder -->
+            <div class="w-12 h-12 rounded-full shadow-clay flex items-center justify-center bg-stone-bg">
+                <i data-lucide="coins" class="text-stone-muted w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-wider">TAKAS ON</h1>
+                <p class="text-[10px] text-stone-muted italic font-serif mt-[-2px]">Eşya fırının külünü aşamaz</p>
+            </div>
+        </div>
+
+        <nav class="hidden md:flex items-center gap-8 font-medium text-sm">
+            <a href="#" class="hover:text-stone-highlight transition-colors flex items-center gap-1">İlan Ver</a>
+            <a href="#" class="hover:text-stone-highlight transition-colors flex items-center gap-1">Mesajlar</a>
+            <a href="#" class="hover:text-stone-highlight transition-colors flex items-center gap-1">Favorilerim</a>
+            <a href="#" class="hover:text-stone-highlight transition-colors flex items-center gap-1 text-stone-highlight"><i data-lucide="crown" class="w-4 h-4"></i> Liderler</a>
+            <a href="#" class="hover:text-stone-highlight transition-colors flex items-center gap-1 text-yellow-600"><i data-lucide="star" class="w-4 h-4"></i> Premium</a>
+        </nav>
+
+        <div class="flex items-center gap-3">
+            <span class="text-sm font-semibold">Hasan Kızıltan</span>
+            <div class="w-10 h-10 rounded-full shadow-clay-inset bg-stone-bg flex items-center justify-center font-bold text-stone-muted">
+                HK
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <main class="container mx-auto px-6 flex flex-col items-center mb-24">
+        
+        <div class="text-center mb-10">
+            <h2 id="ui-static-slogan" class="text-5xl md:text-6xl font-serif text-stone-text mb-4 leading-tight opacity-0">Her Eşya İkinci Bir Şansı<br>Hak Eder</h2>
+            <p class="text-lg md:text-xl italic font-serif text-stone-muted">Eşyalarını takasla, değerini koru.</p>
+        </div>
+
+        <!-- Search Bar Area -->
+        <div class="w-full max-w-3xl flex items-center gap-4">
+            <div class="flex-1 shadow-clay-inset rounded-full flex items-center px-6 py-4 bg-stone-bg/50">
+                <i data-lucide="search" class="w-5 h-5 text-stone-muted mr-3"></i>
+                <input type="text" placeholder="Ne arıyorsun? (Örn: iPhone, Bisiklet, Kitap...)" 
+                       class="w-full bg-transparent border-none outline-none text-stone-text placeholder-stone-muted font-medium">
+            </div>
+            <button class="clay-btn shadow-clay rounded-2xl px-8 py-4 font-bold text-stone-text tracking-wider hover:shadow-clay-hover">
+                ARA
+            </button>
+        </div>
+
+        <!-- 3D Scattered Stones Decoration (Absolute positioning) -->
+        <div class="absolute right-32 top-64 shadow-clay rounded-md w-10 h-16 transform rotate-12 bg-stone-bg flex items-center justify-center">
+            <i data-lucide="activity" class="w-4 h-4 text-stone-muted opacity-50"></i>
+        </div>
+        <div class="absolute left-40 top-80 shadow-clay rounded-sm w-8 h-12 transform -rotate-12 bg-stone-bg opacity-70"></div>
+
+    </main>
+
+    <!-- CATEGORIES -->
+    <section class="container mx-auto px-6 mb-24">
+        <div class="flex items-center gap-4 overflow-x-auto pb-6 no-scrollbar snap-x">
+            
+            <button class="clay-btn shadow-clay rounded-xl px-5 py-3 font-medium flex items-center gap-2 whitespace-nowrap snap-start shrink-0">
+                <i data-lucide="smartphone" class="w-4 h-4"></i> Elektronik
+            </button>
+            <button class="clay-btn shadow-clay rounded-xl px-5 py-3 font-medium flex items-center gap-2 whitespace-nowrap snap-start shrink-0 text-stone-highlight border border-stone-highlight/20 bg-stone-highlight/5">
+                <i data-lucide="sofa" class="w-4 h-4"></i> Mobilya
+            </button>
+            <button class="clay-btn shadow-clay rounded-xl px-5 py-3 font-medium flex items-center gap-2 whitespace-nowrap snap-start shrink-0">
+                <i data-lucide="shirt" class="w-4 h-4"></i> Giyim
+            </button>
+            <button class="clay-btn shadow-clay rounded-xl px-5 py-3 font-medium flex items-center gap-2 whitespace-nowrap snap-start shrink-0">
+                <i data-lucide="book-open" class="w-4 h-4"></i> Kitap
+            </button>
+            <button class="clay-btn shadow-clay rounded-xl px-5 py-3 font-medium flex items-center gap-2 whitespace-nowrap snap-start shrink-0">
+                <i data-lucide="music" class="w-4 h-4"></i> Müzik
+            </button>
+            <button class="clay-btn shadow-clay rounded-xl px-5 py-3 font-medium flex items-center gap-2 whitespace-nowrap snap-start shrink-0">
+                <i data-lucide="bike" class="w-4 h-4"></i> Spor & Outdoor
+            </button>
+            <button class="clay-btn shadow-clay rounded-xl px-5 py-3 font-medium flex items-center gap-2 whitespace-nowrap snap-start shrink-0">
+                <i data-lucide="watch" class="w-4 h-4"></i> Antika
+            </button>
+            <button class="clay-btn shadow-clay rounded-xl px-5 py-3 font-medium flex items-center gap-2 whitespace-nowrap snap-start shrink-0">
+                <i data-lucide="gamepad-2" class="w-4 h-4"></i> Oyun & Konsol
+            </button>
+            <button class="clay-btn shadow-clay rounded-xl px-5 py-3 font-medium flex items-center gap-2 whitespace-nowrap snap-start shrink-0">
+                <i data-lucide="box" class="w-4 h-4"></i> Diğer
+            </button>
+
+        </div>
+    </section>
+
+    <!-- PRODUCT GRID -->
+    <section class="container mx-auto px-6 pb-32">
+        <h3 class="text-3xl font-serif text-center mb-12">Tüm İlanlar</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            
+            <!-- Card 1 (No Image Placeholder) -->
+            <div class="clay-card shadow-clay p-4 bg-stone-bg flex flex-col relative transition-transform hover:-translate-y-1">
+                <div class="absolute top-2 right-2 bg-stone-bg shadow-clay-sm px-2 py-1 rounded-bl-xl rounded-tr-md text-[10px] font-bold tracking-wider z-10">YENİ GİBİ</div>
+                
+                <!-- Engraved Image Area -->
+                <div class="image-engrave w-full aspect-square mb-4 flex items-center justify-center">
+                    <span class="text-2xl font-serif text-stone-muted/50">No Image</span>
+                </div>
+                
+                <h4 class="font-bold text-lg leading-tight mb-1">Takaslık Eşya</h4>
+                <p class="text-xs text-stone-muted mb-4 uppercase tracking-widest">DİĞER</p>
+                
+                <div class="mt-auto border-t border-[#d1c6b5] pt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full shadow-clay-inset bg-stone-bg flex items-center justify-center text-[10px]">C</div>
+                        <span class="text-xs font-medium">chat ateş</span>
+                    </div>
+                    <a href="#" class="text-xs font-semibold hover:text-stone-highlight transition-colors flex items-center gap-1">
+                        İncele <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Card 2 (With Image Placeholder - Bugatti) -->
+            <div class="clay-card shadow-clay p-4 bg-stone-bg flex flex-col relative transition-transform hover:-translate-y-1">
+                <div class="absolute top-2 right-2 bg-stone-bg shadow-clay-sm px-2 py-1 rounded-bl-xl rounded-tr-md text-[10px] font-bold tracking-wider z-10">SIFIR</div>
+                
+                <div class="image-engrave w-full aspect-square mb-4 relative">
+                    <!-- Temporary dummy image representing the car -->
+                    <img src="https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&q=80&w=400" alt="Araba" class="w-full h-full object-cover mix-blend-multiply opacity-90">
+                </div>
+                
+                <h4 class="font-bold text-lg leading-tight mb-1">Spor Araba</h4>
+                <p class="text-xs text-stone-muted mb-4 uppercase tracking-widest">ARAÇ</p>
+                
+                <div class="mt-auto border-t border-[#d1c6b5] pt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full shadow-clay-inset bg-stone-bg flex items-center justify-center text-[10px]">B</div>
+                        <span class="text-xs font-medium">Burak</span>
+                    </div>
+                    <a href="#" class="text-xs font-semibold hover:text-stone-highlight transition-colors flex items-center gap-1">
+                        İncele <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="clay-card shadow-clay p-4 bg-stone-bg flex flex-col relative transition-transform hover:-translate-y-1">
+                <div class="absolute top-2 right-2 bg-stone-bg shadow-clay-sm px-2 py-1 rounded-bl-xl rounded-tr-md text-[10px] font-bold tracking-wider z-10">YENİ GİBİ</div>
+                
+                <div class="image-engrave w-full aspect-square mb-4 relative">
+                    <img src="https://images.unsplash.com/photo-1542281286-9e0a16bb7366?auto=format&fit=crop&q=80&w=400" alt="Tişört" class="w-full h-full object-cover mix-blend-multiply opacity-90">
+                </div>
+                
+                <h4 class="font-bold text-lg leading-tight mb-1">Takaslık Eşya</h4>
+                <p class="text-xs text-stone-muted mb-4 uppercase tracking-widest">GİYİM</p>
+                
+                <div class="mt-auto border-t border-[#d1c6b5] pt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full shadow-clay-inset bg-stone-bg flex items-center justify-center text-[10px]">C</div>
+                        <span class="text-xs font-medium">chat ateş</span>
+                    </div>
+                    <a href="#" class="text-xs font-semibold hover:text-stone-highlight transition-colors flex items-center gap-1">
+                        İncele <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="clay-card shadow-clay p-4 bg-stone-bg flex flex-col relative transition-transform hover:-translate-y-1">
+                <div class="absolute top-2 right-2 bg-stone-bg shadow-clay-sm px-2 py-1 rounded-bl-xl rounded-tr-md text-[10px] font-bold tracking-wider z-10">1 / ?</div>
+                
+                <div class="image-engrave w-full aspect-square mb-4 flex items-center justify-center">
+                    <span class="text-2xl font-serif text-stone-muted/50">No Image</span>
+                </div>
+                
+                <h4 class="font-bold text-lg leading-tight mb-1">Bilinmeyen</h4>
+                <p class="text-xs text-stone-muted mb-4 uppercase tracking-widest">DİĞER</p>
+                
+                <div class="mt-auto border-t border-[#d1c6b5] pt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full shadow-clay-inset bg-stone-bg flex items-center justify-center text-[10px] font-bold">H</div>
+                        <span class="text-xs font-medium uppercase">Masan KÖKTAN</span>
+                    </div>
+                    <a href="#" class="text-xs font-semibold hover:text-stone-highlight transition-colors flex items-center gap-1">
+                        İncele <i data-lucide="arrow-right" class="w-3 h-3"></i>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+    
+    </div> <!-- End of UI Container -->
+
+    <!-- Initialize Lucide Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+
+    <!-- 3D Engine & Sequence Logic -->
+    <script type="module" src="main.js?v=48"></script>
+</body>
+</html>

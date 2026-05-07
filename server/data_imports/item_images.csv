@@ -1,0 +1,4 @@
+id,item_id,image_url,display_order,is_primary,created_at
+img1,i1,/uploads/iphone1.jpg,0,true,2024-04-01T10:00:00Z
+img2,i1,/uploads/iphone2.jpg,1,false,2024-04-01T10:00:00Z
+img3,i2,/uploads/chair.jpg,0,true,2024-04-02T12:00:00Z

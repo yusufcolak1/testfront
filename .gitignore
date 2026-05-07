@@ -1,0 +1,34 @@
+# Global
+node_modules/
+dist/
+.env
+.env.production
+.env.local
+.DS_Store
+*.log
+Thumbs.db
+.vscode/
+.idea/
+
+# Server Specific
+server/node_modules/
+server/dist/
+server/.env
+server/uploads/*
+!server/uploads/.gitkeep
+server/logs/
+server/prisma/dev.db
+server/prisma/dev.db-journal
+server/prisma/*.db
+server/prisma/*.db-journal
+
+# Frontend Specific
+react-app/node_modules/
+react-app/dist/
+react-app/.env
+react-app/.env.production
+
+# PM2
+.pm2/
+*.pid
+ecosystem.config.js.bak

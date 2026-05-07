@@ -1,0 +1,36 @@
+# Render.com Blueprint - Otomatik Deployment
+# Bu dosyayı repo root'una koyun
+
+services:
+  # Backend API Service
+  - type: web
+    name: takason-api
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd server && npm install && npx prisma generate
+    startCommand: cd server && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false  # Manuel olarak eklenecek
+      - key: DIRECT_URL
+        sync: false  # Manuel olarak eklenecek
+      - key: JWT_SECRET
+        generateValue: true  # Otomatik oluşturulacak
+      - key: JWT_REFRESH_SECRET
+        generateValue: true  # Otomatik oluşturulacak
+      - key: ALLOWED_ORIGINS
+        value: https://yourdomain.com,https://www.yourdomain.com
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX
+        value: 100
+      - key: MAX_FILE_SIZE
+        value: 5242880
+      - key: ALLOWED_FILE_TYPES
+        value: image/jpeg,image/png,image/webp,image/gif
+    healthCheckPath: /api/health

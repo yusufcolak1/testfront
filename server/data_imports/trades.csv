@@ -1,0 +1,2 @@
+id,initiator_id,receiver_id,cash_offer,status,note,created_at,updated_at
+t1,d290f1ee-6c54-4b01-90e6-d701748f0852,d290f1ee-6c54-4b01-90e6-d701748f0851,1000,PENDING,Takas teklifimdir.,2024-04-05T14:00:00Z,2014-04-05T14:00:00Z

@@ -1,0 +1,15 @@
+node_modules
+.env
+.env.*
+!.env.production
+npm-debug.log
+dev.db
+dev.db-journal
+scratch
+data_imports
+supabase
+scripts
+test-e2e.js
+n.env
+uploads/*
+!uploads/.gitkeep
