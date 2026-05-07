@@ -5,7 +5,6 @@
 // ============================================================
 
 const { ZodError } = require('zod');
-const { Prisma } = require('@prisma/client');
 
 // ============================================================
 // Özel Uygulama Hatası Sınıfı
@@ -81,13 +80,13 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // ---- Prisma Veritabanı Hataları ----
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+  if (err && err.code && typeof err.code === 'string' && err.code.startsWith('P') && err.clientVersion) {
     const prismaError = handlePrismaError(err);
     statusCode = prismaError.statusCode;
     message = prismaError.message;
   }
 
-  if (err instanceof Prisma.PrismaClientValidationError) {
+  if (err && err.name === 'PrismaClientValidationError') {
     statusCode = 400;
     message = 'Veritabanına gönderilen veri formatı hatalı.';
   }
