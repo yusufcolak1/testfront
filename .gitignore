@@ -1,7 +1,6 @@
 # Global
 node_modules/
 !server/node_modules/.prisma/
-dist/
 .env
 .env.production
 .env.local
@@ -25,6 +24,8 @@ server/prisma/*.db-journal
 # Frontend Specific
 react-app/node_modules/
 react-app/.env
+!react-app/.env.production
+!react-app/dist/
 
 # PM2
 .pm2/
