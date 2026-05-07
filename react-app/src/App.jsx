@@ -63,7 +63,7 @@ function App() {
 
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { user, isAuthenticated, isAdmin, logout, isLoginModalOpen, openLoginModal, closeLoginModal } = useAuth();
+  const { user, isAuthenticated, isAdmin, loading: authLoading, logout, isLoginModalOpen, openLoginModal, closeLoginModal } = useAuth();
   const { isPremiumEnabled, loading: settingsLoading } = useSettings();
 
   const [activeLeaderNavBar, setActiveLeaderNavBar] = useState(0);
@@ -404,7 +404,7 @@ function App() {
             <Route path="/guvenli-takas" element={<SafeSwapGuide />} />
             <Route path="/kvkk" element={<KVKK />} />
             {/* Admin Routes — sadece admin */}
-            <Route path="/admin" element={isAdmin ? <AdminLayout /> : <Navigate to="/" replace />}>
+            <Route path="/admin" element={authLoading ? null : (isAdmin ? <AdminLayout /> : <Navigate to="/" replace />)}>
               <Route index element={<AdminDashboard />} />
               <Route path="kullanicilar" element={<AdminUsers />} />
               <Route path="ilanlar" element={<AdminItems />} />
