@@ -2,7 +2,7 @@
 // TAKASON - Veritabanı Yapılandırması (Prisma)
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../prisma/generated-client');
 
 const prisma = new PrismaClient();
 

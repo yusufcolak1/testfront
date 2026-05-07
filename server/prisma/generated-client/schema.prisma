@@ -24,48 +24,48 @@ model User {
   role         String   @default("USER") // USER, ADMIN, MODERATOR
   status       String   @default("ACTIVE") // ACTIVE, BANNED, SUSPENDED
   createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  profile        Profile?
-  items          Item[]
-  sentTrades     Trade[]           @relation("SentTrades")
-  receivedTrades Trade[]           @relation("ReceivedTrades")
-  chatRooms      ChatRoom[]
-  messages       Message[]
-  favorites      Favorite[]
-  addresses      Address[]
-  notifications  Notification[]
-  interactions   UserInteraction[]
-  questions      ItemQuestion[]
-  comments       Comment[]
+  profile         Profile?
+  items           Item[]
+  sentTrades      Trade[]           @relation("SentTrades")
+  receivedTrades  Trade[]           @relation("ReceivedTrades")
+  chatRooms       ChatRoom[]
+  messages        Message[]
+  favorites       Favorite[]
+  addresses       Address[]
+  notifications   Notification[]
+  interactions    UserInteraction[]
+  questions       ItemQuestion[]
+  comments        Comment[]
   supportRequests SupportRequest[]
 
   @@map("users")
 }
 
 model Profile {
-  id               String   @id @default(uuid())
-  userId           String   @unique @map("user_id")
-  firstName        String   @map("first_name")
-  lastName         String   @map("last_name")
+  id               String    @id @default(uuid())
+  userId           String    @unique @map("user_id")
+  firstName        String    @map("first_name")
+  lastName         String    @map("last_name")
   phone            String?
   city             String?
-  country          String?  @default("Turkey")
+  country          String?   @default("Turkey")
   bio              String?
-  avatarUrl        String?  @map("avatar_url")
-  rating           Float    @default(0.0)
-  totalTrades      Int      @default(0) @map("total_trades")
-  score            Int      @default(0)
-  swapsCompleted   Int      @default(0) @map("swaps_completed")
-  cancellationRate Float    @default(0.0) @map("cancellation_rate")
+  avatarUrl        String?   @map("avatar_url")
+  rating           Float     @default(0.0)
+  totalTrades      Int       @default(0) @map("total_trades")
+  score            Int       @default(0)
+  swapsCompleted   Int       @default(0) @map("swaps_completed")
+  cancellationRate Float     @default(0.0) @map("cancellation_rate")
   medal            String?
-  isPremium        Boolean  @default(false) @map("is_premium")
+  isPremium        Boolean   @default(false) @map("is_premium")
   premiumUntil     DateTime? @map("premium_until")
   // Konum (algoritma için)
-  latitude         Float?   @map("latitude")
-  longitude        Float?   @map("longitude")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  latitude         Float?    @map("latitude")
+  longitude        Float?    @map("longitude")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -111,31 +111,31 @@ model Category {
 }
 
 model Item {
-  id               String      @id @default(uuid())
-  userId           String      @map("user_id")
-  categoryId       String      @map("category_id")
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  categoryId       String   @map("category_id")
   title            String
   description      String
-  condition        String      // NEW, LIKE_NEW, GOOD, FAIR, POOR
-  status           String      @default("DRAFT") // DRAFT, ACTIVE, SOLD, ARCHIVED, DELETED
+  condition        String // NEW, LIKE_NEW, GOOD, FAIR, POOR
+  status           String   @default("DRAFT") // DRAFT, ACTIVE, SOLD, ARCHIVED, DELETED
   location         String?
-  estimatedValue   Float?      @map("estimated_value")
-  swapFor          String?     @map("swap_for")
+  estimatedValue   Float?   @map("estimated_value")
+  swapFor          String?  @map("swap_for")
   // Etiketler ve takas tercihleri (JSON string)
-  tags             String?     // örn: '["telefon","samsung","elektronik"]'
-  wantedCategories String?     @map("wanted_categories") // örn: '["Elektronik","Kitap"]'
+  tags             String? // örn: '["telefon","samsung","elektronik"]'
+  wantedCategories String?  @map("wanted_categories") // örn: '["Elektronik","Kitap"]'
   // Konum koordinatları (algoritma için)
-  latitude         Float?      @map("latitude")
-  longitude        Float?      @map("longitude")
-  tag              String?     // NEW, FEATURED, POPULAR
-  isFeatured       Boolean     @default(false) @map("is_featured")
-  isPopular        Boolean     @default(false) @map("is_popular")
-  viewCount        Int         @default(0) @map("view_count")
-  favoriteCount    Int         @default(0) @map("favorite_count")
-  messageCount     Int         @default(0) @map("message_count")
-  qualityScore     Float       @default(0.0) @map("quality_score")
-  createdAt        DateTime    @default(now()) @map("created_at")
-  updatedAt        DateTime    @updatedAt @map("updated_at")
+  latitude         Float?   @map("latitude")
+  longitude        Float?   @map("longitude")
+  tag              String? // NEW, FEATURED, POPULAR
+  isFeatured       Boolean  @default(false) @map("is_featured")
+  isPopular        Boolean  @default(false) @map("is_popular")
+  viewCount        Int      @default(0) @map("view_count")
+  favoriteCount    Int      @default(0) @map("favorite_count")
+  messageCount     Int      @default(0) @map("message_count")
+  qualityScore     Float    @default(0.0) @map("quality_score")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   category     Category          @relation(fields: [categoryId], references: [id])
@@ -188,13 +188,13 @@ model ItemQuestion {
 // ============================================
 
 model Trade {
-  id         String      @id @default(uuid())
-  senderId   String      @map("sender_id")
-  receiverId String      @map("receiver_id")
-  status     String      @default("PENDING") // PENDING, ACCEPTED, REJECTED, COMPLETED, CANCELLED
+  id         String   @id @default(uuid())
+  senderId   String   @map("sender_id")
+  receiverId String   @map("receiver_id")
+  status     String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, COMPLETED, CANCELLED
   message    String?
-  createdAt  DateTime    @default(now()) @map("created_at")
-  updatedAt  DateTime    @updatedAt @map("updated_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   sender     User        @relation("SentTrades", fields: [senderId], references: [id])
   receiver   User        @relation("ReceivedTrades", fields: [receiverId], references: [id])
@@ -210,7 +210,7 @@ model TradeItem {
   id        String   @id @default(uuid())
   tradeId   String   @map("trade_id")
   itemId    String   @map("item_id")
-  side      String   // OFFER, REQUEST
+  side      String // OFFER, REQUEST
   createdAt DateTime @default(now()) @map("created_at")
 
   trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
@@ -227,10 +227,10 @@ model TradeItem {
 // ============================================
 
 model ChatRoom {
-  id        String    @id @default(uuid())
-  userIds   String    @map("user_ids")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  userIds   String   @map("user_ids")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   users    User[]
   messages Message[]
@@ -307,7 +307,7 @@ model HelpCategory {
 model PremiumPerk {
   id          String   @id @default(uuid())
   title       String
-  value       String?  // örn. "AKTİF", "3/10"
+  value       String? // örn. "AKTİF", "3/10"
   description String
   icon        String   @default("Sparkles")
   color       String   @default("text-amber-500")
@@ -325,7 +325,7 @@ model PremiumPlan {
   price       Float
   period      String   @default("MONTHLY") // MONTHLY, YEARLY
   description String?
-  features    String   // JSON-encoded string array
+  features    String // JSON-encoded string array
   order       Int      @default(0)
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -395,7 +395,7 @@ model UserInteraction {
   userId    String   @map("user_id")
   itemId    String   @map("item_id")
   // VIEW=1, CLICK=3, FAVORITE=5, MESSAGE=8, SKIP=-2
-  type      String   // VIEW, CLICK, FAVORITE, MESSAGE, SKIP
+  type      String // VIEW, CLICK, FAVORITE, MESSAGE, SKIP
   weight    Int      @default(1)
   createdAt DateTime @default(now()) @map("created_at")
 

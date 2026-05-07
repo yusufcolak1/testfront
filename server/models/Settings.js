@@ -1,7 +1,7 @@
 // Admin Panel Settings Model
 // Cloudinary ve diğer ayarları veritabanında saklar
 
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../prisma/generated-client');
 const prisma = new PrismaClient();
 
 class Settings {
