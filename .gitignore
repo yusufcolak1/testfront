@@ -24,9 +24,7 @@ server/prisma/*.db-journal
 
 # Frontend Specific
 react-app/node_modules/
-react-app/dist/
 react-app/.env
-react-app/.env.production
 
 # PM2
 .pm2/
