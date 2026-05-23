@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Send, MessageSquare, Search, MoreVertical, Loader2 } from 'lucide-react';
+import { Send, MessageSquare, Search, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -18,49 +18,95 @@ export default function Messages() {
     const [sending, setSending] = useState(false);
     const [showChatMobile, setShowChatMobile] = useState(!!searchParams.get('room'));
     const scrollRef = useRef(null);
+    // En son bilinen mesaj ID'sini tut — diff için
+    const lastMsgIdRef = useRef(null);
+    const activeRoomIdRef = useRef(activeRoomId);
 
+    useEffect(() => { activeRoomIdRef.current = activeRoomId; }, [activeRoomId]);
     useEffect(() => { if (!isAuthenticated) navigate('/'); }, [isAuthenticated, navigate]);
 
-    const loadList = async () => {
+    // Kullanıcı sohbet kutusunun dibinde mi?
+    const isAtBottom = () => {
+        const el = scrollRef.current;
+        if (!el) return true;
+        return el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    };
+
+    const scrollToBottom = (smooth = false) => {
+        setTimeout(() => {
+            if (scrollRef.current) {
+                scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+            }
+        }, 30);
+    };
+
+    // ── İlk yükleme: loading spinner göster ─────────────────
+    const loadList = useCallback(async () => {
         try {
             setLoadingList(true);
             const r = await api.getConversations();
             setConversations(r.data || []);
-            if (!activeRoomId && (r.data || []).length > 0) {
-                // Auto-pick first on desktop
-                if (window.innerWidth >= 768) setActiveRoomId(r.data[0].id);
+            if (!activeRoomIdRef.current && (r.data || []).length > 0 && window.innerWidth >= 768) {
+                setActiveRoomId(r.data[0].id);
             }
         } catch (e) { console.error(e); }
         finally { setLoadingList(false); }
-    };
+    }, []);
 
-    const loadRoom = async (id) => {
+    const loadRoom = useCallback(async (id, { silent = false } = {}) => {
         try {
-            setLoadingRoom(true);
+            if (!silent) setLoadingRoom(true);
             const r = await api.getConversation(id);
             const room = r.data;
-            setActiveRoom(room);
-            setMessages(room.messages || []);
-            setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, 50);
-            // Odadaki okunmamış mesajları arka planda okundu işaretle
+            if (!silent) setActiveRoom(room);
+            const newMsgs = room.messages || [];
+            setMessages(prev => {
+                if (newMsgs.length === prev.length && newMsgs[newMsgs.length - 1]?.id === prev[prev.length - 1]?.id) {
+                    return prev; // hiç değişmemiş, re-render tetikleme
+                }
+                return newMsgs;
+            });
+            // Sadece yeni mesaj geldiyse ve kullanıcı dibindeyse otomatik kaydır
+            const newLastId = newMsgs[newMsgs.length - 1]?.id;
+            if (newLastId && newLastId !== lastMsgIdRef.current) {
+                lastMsgIdRef.current = newLastId;
+                if (!silent || isAtBottom()) scrollToBottom(silent);
+            }
             api.markRoomRead(id).catch(() => {});
-        } catch (e) { alert(e.message); }
-        finally { setLoadingRoom(false); }
-    };
+        } catch (e) { if (!silent) alert(e.message); }
+        finally { if (!silent) setLoadingRoom(false); }
+    }, []);
 
-    useEffect(() => { if (isAuthenticated) loadList(); }, [isAuthenticated]);
-    useEffect(() => { if (activeRoomId) loadRoom(activeRoomId); }, [activeRoomId]);
+    // ── Sessiz polling: liste + açık oda ───────────────────
+    const silentRefresh = useCallback(async () => {
+        try {
+            const r = await api.getConversations();
+            setConversations(prev => {
+                const newData = r.data || [];
+                // Sadece gerçekten değişmişse güncelle
+                const changed = newData.length !== prev.length ||
+                    newData.some((c, i) => c.unread !== prev[i]?.unread || c.msg !== prev[i]?.msg);
+                return changed ? newData : prev;
+            });
+        } catch { /* sessizce yut */ }
 
-    // Yeni mesajları yakalamak için 10 sn'de bir konuşma listesini yenile
+        const roomId = activeRoomIdRef.current;
+        if (roomId) {
+            await loadRoom(roomId, { silent: true });
+        }
+    }, [loadRoom]);
+
+    useEffect(() => { if (isAuthenticated) loadList(); }, [isAuthenticated, loadList]);
+    useEffect(() => { if (activeRoomId) loadRoom(activeRoomId); }, [activeRoomId, loadRoom]);
+
+    // Polling — sadece sekme odaktaysa, 15 sn
     useEffect(() => {
         if (!isAuthenticated) return;
         const t = setInterval(() => {
-            loadList();
-            // Açık oda varsa onu da yenile (başka kullanıcıdan gelen mesajlar için)
-            if (activeRoomId) loadRoom(activeRoomId);
-        }, 10000);
+            if (!document.hidden) silentRefresh();
+        }, 15000);
         return () => clearInterval(t);
-    }, [isAuthenticated, activeRoomId]);
+    }, [isAuthenticated, silentRefresh]);
 
     const send = async (e) => {
         e?.preventDefault();
@@ -70,8 +116,14 @@ export default function Messages() {
         setSending(true);
         try {
             await api.sendMessage(activeRoomId, content);
-            await loadRoom(activeRoomId);
-            await loadList();
+            // Mesaj gönderdikten sonra oda sessizce yenilenir (scroll zorla)
+            const r = await api.getConversation(activeRoomId);
+            const newMsgs = r.data?.messages || [];
+            setMessages(newMsgs);
+            lastMsgIdRef.current = newMsgs[newMsgs.length - 1]?.id || null;
+            scrollToBottom(true);
+            // Liste de sessizce
+            api.getConversations().then(lr => setConversations(lr.data || [])).catch(() => {});
         } catch (e) { alert(e.message); }
         finally { setSending(false); }
     };
@@ -79,6 +131,7 @@ export default function Messages() {
     const partner = activeRoom?.users?.find((u) => u.id !== user?.id);
     const partnerName = partner?.profile ? `${partner.profile.firstName} ${(partner.profile.lastName || '').charAt(0)}.` : 'Kullanıcı';
     const partnerInitials = (partner?.profile?.firstName?.[0] || 'K').toUpperCase();
+    const totalUnread = conversations.reduce((s, c) => s + (c.unread || 0), 0);
 
     return (
         <div className="min-h-screen bg-[#f5f1ed] pb-24 md:pb-20">
@@ -91,9 +144,9 @@ export default function Messages() {
                         <div>
                             <div className="flex items-center gap-3 leading-none mb-1">
                                 <h2 className="text-2xl md:text-4xl font-serif text-stone-900 tracking-tighter italic font-black leading-none">Mesajlar</h2>
-                                {conversations.reduce((s, c) => s + (c.unread || 0), 0) > 0 && (
-                                    <span className="inline-flex items-center justify-center px-2 py-0.5 bg-red-500 text-white text-[10px] font-black rounded-full leading-none animate-pulse">
-                                        {conversations.reduce((s, c) => s + (c.unread || 0), 0)} okunmamış
+                                {totalUnread > 0 && (
+                                    <span className="inline-flex items-center justify-center px-2 py-0.5 bg-red-500 text-white text-[10px] font-black rounded-full leading-none">
+                                        {totalUnread} okunmamış
                                     </span>
                                 )}
                             </div>
@@ -117,7 +170,13 @@ export default function Messages() {
                             ) : conversations.length === 0 ? (
                                 <div className="text-center text-stone-400 py-8 text-xs italic">Henüz konuşman yok.</div>
                             ) : conversations.map((c) => (
-                                <div key={c.id} onClick={() => { setActiveRoomId(c.id); setShowChatMobile(true); }} className={`p-4 rounded-2xl flex items-center gap-4 cursor-pointer transition-all ${activeRoomId === c.id ? 'bg-white shadow-md' : 'hover:bg-white/50'} ${c.unread > 0 && activeRoomId !== c.id ? 'bg-amber-50/60' : ''}`}>
+                                <div
+                                    key={c.id}
+                                    onClick={() => { setActiveRoomId(c.id); setShowChatMobile(true); }}
+                                    className={`p-4 rounded-2xl flex items-center gap-4 cursor-pointer transition-all
+                                        ${activeRoomId === c.id ? 'bg-white shadow-md' : 'hover:bg-white/50'}
+                                        ${c.unread > 0 && activeRoomId !== c.id ? 'bg-amber-50/60' : ''}`}
+                                >
                                     <div className="relative shrink-0">
                                         <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-stone-100 flex items-center justify-center font-serif text-base font-black text-stone-900 border-2 border-white shadow-sm">
                                             {c.initials}
@@ -143,7 +202,9 @@ export default function Messages() {
                     {/* Sağ Panel */}
                     <div className={`${showChatMobile ? 'flex' : 'hidden md:flex'} flex-1 flex-col bg-white`}>
                         {!activeRoomId ? (
-                            <div className="flex-1 flex items-center justify-center text-stone-400 text-sm italic px-6 text-center">Bir konuşma seçin veya ilan detayından "Mesaj Gönder" ile sohbet başlatın.</div>
+                            <div className="flex-1 flex items-center justify-center text-stone-400 text-sm italic px-6 text-center">
+                                Bir konuşma seçin veya ilan detayından "Mesaj Gönder" ile sohbet başlatın.
+                            </div>
                         ) : (
                             <>
                                 <div className="px-4 md:px-8 py-3 md:py-5 border-b border-stone-50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10">
@@ -181,9 +242,19 @@ export default function Messages() {
                                 <form onSubmit={send} className="p-3 md:p-6 bg-white border-t border-stone-50">
                                     <div className="flex items-center gap-2 md:gap-4">
                                         <div className="flex-1 relative">
-                                            <input value={text} onChange={(e) => setText(e.target.value)} type="text" placeholder="Mesaj yaz..." className="w-full bg-stone-50 border border-stone-50 px-4 md:px-6 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl outline-none focus:border-stone-200 focus:bg-white text-xs font-medium shadow-inner" />
+                                            <input
+                                                value={text}
+                                                onChange={(e) => setText(e.target.value)}
+                                                type="text"
+                                                placeholder="Mesaj yaz..."
+                                                className="w-full bg-stone-50 border border-stone-50 px-4 md:px-6 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl outline-none focus:border-stone-200 focus:bg-white text-xs font-medium shadow-inner"
+                                            />
                                         </div>
-                                        <button type="submit" disabled={sending || !text.trim()} className="w-10 h-10 md:w-11 md:h-11 bg-stone-900 text-[#f5f1ed] rounded-xl flex items-center justify-center hover:bg-black active:scale-95 transition-all shadow-xl shrink-0 disabled:opacity-50">
+                                        <button
+                                            type="submit"
+                                            disabled={sending || !text.trim()}
+                                            className="w-10 h-10 md:w-11 md:h-11 bg-stone-900 text-[#f5f1ed] rounded-xl flex items-center justify-center hover:bg-black active:scale-95 transition-all shadow-xl shrink-0 disabled:opacity-50"
+                                        >
                                             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 md:w-5 md:h-5" />}
                                         </button>
                                     </div>
