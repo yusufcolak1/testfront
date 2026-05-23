@@ -94,27 +94,6 @@ export default function Discover() {
     const scrollContainerRef = useRef(null);
     const adRefs = useRef({});
 
-    const [gridScale, setGridScale] = useState(1);
-    const [gridHeight, setGridHeight] = useState(800);
-    const gridRef = useRef(null);
-
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth < 1024) {
-                setGridScale(window.innerWidth / 1024);
-            } else {
-                setGridScale(1);
-            }
-            if (gridRef.current) {
-                setGridHeight(gridRef.current.offsetHeight);
-            }
-        };
-        handleResize();
-        setTimeout(handleResize, 100);
-        setTimeout(handleResize, 500);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [viewMode]);
 
     const openFeed = (id) => {
         setViewMode('feed');
@@ -371,51 +350,50 @@ export default function Discover() {
             </div>
             {/* GRID VIEW */}
             {viewMode === 'grid' && (
-                <div
-                    className="w-full relative overflow-hidden transition-all duration-300"
-                    style={{ height: gridScale < 1 ? `${gridHeight * gridScale}px` : 'auto' }}
-                >
-                    <div
-                        ref={gridRef}
-                        className="origin-top-left w-full"
-                        style={{
-                            transform: gridScale < 1 ? `scale(${gridScale})` : 'none',
-                            width: gridScale < 1 ? '1024px' : '100%',
-                            position: gridScale < 1 ? 'absolute' : 'relative',
-                            top: 0, left: 0
-                        }}
-                    >
-                        <div className="container mx-auto px-6 py-10 max-w-7xl animate-in fade-in duration-700" style={{ maxWidth: gridScale < 1 ? 'none' : undefined }}>
-                            <div className="flex flex-col md:flex-row items-center justify-between mb-8 md:mb-12 gap-6 md:gap-8 border-b border-stone-200 pb-8 md:pb-10">
-                                <div className="space-y-1 md:space-y-2 text-center md:text-left">
-                                    <h1 className="text-2xl md:text-5xl font-serif font-black text-stone-900 italic tracking-tighter leading-tight">Keşfet <span style={{ color: '#4a2008' }}>Dünyası</span></h1>
-                                    <p className="text-stone-500 font-serif italic text-xs md:text-lg font-medium">Takasın yeni nesil, akışkan hali.</p>
-                                </div>
-                                <div className="flex items-center gap-3 md:gap-4 bg-white p-1.5 md:p-2 rounded-xl md:rounded-2xl shadow-xl shadow-stone-900/5">
-                                    <button 
-                                        onClick={() => setIsFilterOpen(true)}
-                                        className="px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-black text-[9px] md:text-[10px] tracking-widest uppercase flex items-center gap-2 transition-all bg-white border border-stone-100 text-stone-500 hover:border-stone-900 hover:text-stone-900"
-                                    >
-                                        <Filter className="w-3.5 h-3.5 md:w-4 md:h-4" /> FİLTRELE
-                                    </button>
-                                    <div className="w-px h-6 bg-stone-100 hidden md:block" />
-                                    <button 
-                                        onClick={() => handleFilterModeChange('trends')}
-                                        className={`px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-black text-[9px] md:text-[10px] tracking-widest uppercase flex items-center gap-2 transition-all ${filterMode === 'trends' ? 'bg-stone-900 text-amber-400' : 'text-stone-500 hover:text-stone-900'}`}
-                                    >
-                                        <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" /> TRENDLER
-                                    </button>
-                                    <button 
-                                        onClick={() => handleFilterModeChange('nearby')}
-                                        className={`px-4 py-2.5 md:px-6 md:py-3 rounded-lg md:rounded-xl font-black text-[9px] md:text-[10px] tracking-widest uppercase transition-all ${filterMode === 'nearby' ? 'bg-stone-900 text-amber-400' : 'text-stone-500 hover:text-stone-900'}`}
-                                    >
-                                        YAKININDAKİLER
-                                    </button>
-                                </div>
+                <div className="w-full">
+                    <div className="container mx-auto px-4 sm:px-6 py-6 md:py-10 max-w-7xl animate-in fade-in duration-700">
+                        <div className="flex flex-col md:flex-row items-center justify-between mb-6 md:mb-12 gap-4 md:gap-8 border-b border-stone-200 pb-6 md:pb-10">
+                            <div className="space-y-1 md:space-y-2 text-center md:text-left">
+                                <h1 className="text-2xl md:text-5xl font-serif font-black text-stone-900 italic tracking-tighter leading-tight">Keşfet <span style={{ color: '#4a2008' }}>Dünyası</span></h1>
+                                <p className="text-stone-500 font-serif italic text-xs md:text-lg font-medium">Takasın yeni nesil, akışkan hali.</p>
                             </div>
+                            <div className="flex items-center gap-2 md:gap-4 bg-white p-1.5 md:p-2 rounded-xl md:rounded-2xl shadow-xl shadow-stone-900/5">
+                                <button 
+                                    onClick={() => setIsFilterOpen(true)}
+                                    className="px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-black text-[9px] md:text-[10px] tracking-widest uppercase flex items-center gap-1.5 md:gap-2 transition-all bg-white border border-stone-100 text-stone-500 hover:border-stone-900 hover:text-stone-900"
+                                >
+                                    <Filter className="w-3.5 h-3.5 md:w-4 md:h-4" /> FİLTRELE
+                                </button>
+                                <div className="w-px h-6 bg-stone-100 hidden md:block" />
+                                <button 
+                                    onClick={() => handleFilterModeChange('trends')}
+                                    className={`px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-black text-[9px] md:text-[10px] tracking-widest uppercase flex items-center gap-1.5 md:gap-2 transition-all ${filterMode === 'trends' ? 'bg-stone-900 text-amber-400' : 'text-stone-500 hover:text-stone-900'}`}
+                                >
+                                    <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" /> TRENDLER
+                                </button>
+                                <button 
+                                    onClick={() => handleFilterModeChange('nearby')}
+                                    className={`px-3 py-2 md:px-6 md:py-3 rounded-lg md:rounded-xl font-black text-[9px] md:text-[10px] tracking-widest uppercase transition-all ${filterMode === 'nearby' ? 'bg-stone-900 text-amber-400' : 'text-stone-500 hover:text-stone-900'}`}
+                                >
+                                    YAKIN
+                                </button>
+                            </div>
+                        </div>
 
-                            <div className="grid grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                                {discoverAds.map((ad, index) => (
+                        {loading ? (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
+                                {Array.from({ length: 10 }).map((_, i) => (
+                                    <div key={i} className="aspect-[3/4] rounded-2xl md:rounded-[2.5rem] bg-stone-200 animate-pulse" />
+                                ))}
+                            </div>
+                        ) : discoverAds.length === 0 ? (
+                            <div className="text-center py-20 text-stone-400 font-serif italic">
+                                <LayoutGrid className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                                <p>Henüz ilan bulunamadı.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
+                                {discoverAds.map((ad) => (
                                     <div
                                         key={ad.id}
                                         onClick={() => openFeed(ad.id)}
@@ -423,19 +401,19 @@ export default function Discover() {
                                     >
                                         <img src={ad.images[0]} alt={ad.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                        <div className="absolute bottom-4 md:bottom-6 left-4 md:left-6 right-4 md:right-6 translate-y-0 md:translate-y-4 group-hover:translate-y-0 transition-transform duration-500 opacity-100 md:opacity-0 group-hover:opacity-100 flex items-end justify-between text-white text-[10px] md:text-xs font-bold uppercase italic">
+                                        <div className="absolute bottom-3 md:bottom-6 left-3 md:left-6 right-3 md:right-6 translate-y-0 md:translate-y-4 group-hover:translate-y-0 transition-transform duration-500 opacity-100 md:opacity-0 group-hover:opacity-100 flex items-end justify-between text-white text-[9px] md:text-xs font-bold uppercase italic">
                                             <div className="space-y-0.5 md:space-y-1 max-w-[70%]">
                                                 <h3 className="font-serif italic font-bold leading-tight truncate">{ad.title}</h3>
                                                 <p className="text-amber-400 text-[7px] md:text-[8px] tracking-widest">{ad.location}</p>
                                             </div>
-                                            <div className="w-7 h-7 md:w-8 md:h-8 bg-amber-500 rounded-full flex items-center justify-center text-stone-900 shadow-xl group-hover:scale-110 transition-transform shrink-0">
-                                                <Play className="w-3 h-3 fill-stone-900" />
+                                            <div className="w-6 h-6 md:w-8 md:h-8 bg-amber-500 rounded-full flex items-center justify-center text-stone-900 shadow-xl group-hover:scale-110 transition-transform shrink-0">
+                                                <Play className="w-2.5 h-2.5 md:w-3 md:h-3 fill-stone-900" />
                                             </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             )}
