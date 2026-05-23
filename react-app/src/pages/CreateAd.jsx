@@ -77,36 +77,40 @@ export default function CreateAd() {
     };
     const upd = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
-    // HEIC / kamera formatlarını canvas üzerinden JPEG'e çevirir
+    // Kamera/HEIC dahil her formatı JPEG'e çevirir ve max 1920px'e küçültür
     const normalizeToJpeg = (file) => {
         return new Promise((resolve) => {
-            // Zaten desteklenen formatlardaysa doğrudan döndür
-            if (['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-                resolve(file);
-                return;
-            }
             const objectUrl = URL.createObjectURL(file);
             const img = new Image();
             img.onload = () => {
+                const MAX = 1920;
+                let { naturalWidth: w, naturalHeight: h } = img;
+                if (w > MAX || h > MAX) {
+                    if (w > h) { h = Math.round((h / w) * MAX); w = MAX; }
+                    else       { w = Math.round((w / h) * MAX); h = MAX; }
+                }
                 const canvas = document.createElement('canvas');
-                canvas.width = img.naturalWidth;
-                canvas.height = img.naturalHeight;
+                canvas.width = w;
+                canvas.height = h;
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
+                // Beyaz arka plan (şeffaf PNG'ler için)
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
                 URL.revokeObjectURL(objectUrl);
                 canvas.toBlob(
                     (blob) => {
                         if (!blob) { resolve(file); return; }
-                        const safeName = file.name.replace(/\.[^.]+$/, '') || 'photo';
+                        const safeName = (file.name || 'photo').replace(/\.[^.]+$/, '');
                         resolve(new File([blob], `${safeName}.jpg`, { type: 'image/jpeg' }));
                     },
                     'image/jpeg',
-                    0.9
+                    0.85
                 );
             };
             img.onerror = () => {
                 URL.revokeObjectURL(objectUrl);
-                resolve(file); // dönüşüm başarısız olursa orijinali dene
+                resolve(file);
             };
             img.src = objectUrl;
         });
