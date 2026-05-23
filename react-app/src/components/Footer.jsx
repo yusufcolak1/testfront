@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Twitter, Instagram, Youtube, Phone, Mail, MapPin, ArrowRight, ShieldCheck, HelpCircle, FileText } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Youtube, Phone, Mail, MapPin, ArrowRight, ShieldCheck, HelpCircle, FileText, Music2 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
 export default function Footer() {
@@ -12,6 +12,14 @@ export default function Footer() {
     const contactEmail = settings['site.contactEmail'] || 'destek@takason.com';
     const contactPhone = settings['site.contactPhone'] || '0850 123 45 67';
     const slogan = settings['site.slogan'] || 'Sizin paranız burada geçmez.';
+
+    const socialLinks = [
+        { key: 'social.instagram', Icon: Instagram,  label: 'Instagram' },
+        { key: 'social.facebook',  Icon: Facebook,   label: 'Facebook'  },
+        { key: 'social.twitter',   Icon: Twitter,    label: 'Twitter/X' },
+        { key: 'social.youtube',   Icon: Youtube,    label: 'YouTube'   },
+        { key: 'social.tiktok',    Icon: Music2,     label: 'TikTok'    },
+    ].filter(({ key }) => settings[key] && settings[key].trim() !== '');
 
     useEffect(() => {
         const handleResize = () => {
@@ -63,13 +71,22 @@ export default function Footer() {
                                     "{slogan}" Türkiye'nin en büyük takas topluluğuna hoş geldin.
                                 </p>
                             </div>
-                            <div className="flex gap-4">
-                                {[Facebook, Twitter, Instagram, Youtube].map((Icon, i) => (
-                                    <a key={i} href="#" className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-amber-500 hover:text-stone-900 hover:-translate-y-1 transition-all">
-                                        <Icon className="w-5 h-5" />
-                                    </a>
-                                ))}
-                            </div>
+                            {socialLinks.length > 0 && (
+                                <div className="flex flex-wrap gap-3">
+                                    {socialLinks.map(({ key, Icon, label }) => (
+                                        <a
+                                            key={key}
+                                            href={settings[key]}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            title={label}
+                                            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-amber-500 hover:text-stone-900 hover:-translate-y-1 transition-all"
+                                        >
+                                            <Icon className="w-5 h-5" />
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Quick Links: Discover */}

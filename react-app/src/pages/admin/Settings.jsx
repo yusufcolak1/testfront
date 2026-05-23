@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Save, Mail, MessageSquare, Globe, Image, Palette, RefreshCw, Send, CheckCircle2, XCircle, Crown, Lock } from 'lucide-react';
+import { Save, Mail, MessageSquare, Globe, Image, Palette, RefreshCw, Send, CheckCircle2, XCircle, Crown, Lock, Share2 } from 'lucide-react';
 import api from '../../lib/api';
 import { useSettings } from '../../contexts/SettingsContext';
 
 const groupMeta = {
     general: { label: 'Genel', icon: Globe },
+    social: { label: 'Sosyal Medya', icon: Share2 },
     algorithm: { label: 'Algoritma & Skorlama', icon: RefreshCw },
     smtp: { label: 'SMTP (E-posta)', icon: Mail },
     sms: { label: 'SMS', icon: MessageSquare },
