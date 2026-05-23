@@ -62,8 +62,8 @@ export default function CreateAd() {
         return () => previews.forEach((url) => URL.revokeObjectURL(url));
     }, [previews]);
 
-    // Limit hesaplama yardımcıları
-    const isLimitActive = monthlyInfo?.premiumEnabled && !monthlyInfo?.isPremiumUser && monthlyInfo?.limit !== null;
+    // Limit yalnızca premium modülü aktifken ve kullanıcı premium değilken geçerli
+    const isLimitActive = isPremiumEnabled && monthlyInfo?.premiumEnabled && !monthlyInfo?.isPremiumUser && monthlyInfo?.limit !== null;
     const isLimitReached = isLimitActive && monthlyInfo?.count >= monthlyInfo?.limit;
     const remainingAds = isLimitActive ? Math.max(0, (monthlyInfo?.limit ?? 0) - (monthlyInfo?.count ?? 0)) : null;
 
