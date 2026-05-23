@@ -299,23 +299,24 @@ export default function AdDetail() {
                             </div>
 
                             <div className="pt-6 border-t border-stone-50 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
+                                <Link to={`/kullanici/${item.user?.id}`} className="flex items-center gap-4 group/owner min-w-0">
                                     {item.user?.profile?.avatarUrl ? (
                                         <img 
                                             src={getFullImageUrl(item.user.profile.avatarUrl)} 
                                             alt={ownerName} 
-                                            className="w-12 h-12 rounded-2xl object-cover shadow-xl"
+                                            className="w-12 h-12 rounded-2xl object-cover shadow-xl shrink-0 group-hover/owner:ring-2 group-hover/owner:ring-amber-400 transition-all"
                                         />
                                     ) : (
-                                        <div className="w-12 h-12 rounded-2xl bg-stone-900 flex items-center justify-center text-white font-black italic shadow-xl">{ownerInitials}</div>
+                                        <div className="w-12 h-12 rounded-2xl bg-stone-900 flex items-center justify-center text-white font-black italic shadow-xl shrink-0 group-hover/owner:ring-2 group-hover/owner:ring-amber-400 transition-all">{ownerInitials}</div>
                                     )}
-                                    <div>
-                                        <div className="text-sm font-black text-stone-900 flex items-center gap-1.5">
+                                    <div className="min-w-0">
+                                        <div className="text-sm font-black text-stone-900 flex items-center gap-1.5 group-hover/owner:text-[#4a2008] transition-colors">
                                             {ownerName}
+                                            <ArrowRight className="w-3 h-3 opacity-0 group-hover/owner:opacity-100 transition-opacity" />
                                         </div>
                                         <div className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">{item.user?.profile?.city || '—'}</div>
                                     </div>
-                                </div>
+                                </Link>
                                 <button onClick={toggleFav} disabled={acting} className={`p-3 rounded-xl transition-all ${isFavorited ? 'bg-red-50 text-red-500' : 'bg-stone-50 text-stone-400 hover:bg-red-50 hover:text-red-500'}`}>
                                     <Heart className={`w-4 h-4 ${isFavorited ? 'fill-red-500' : ''}`} />
                                 </button>
