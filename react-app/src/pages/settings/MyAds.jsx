@@ -87,7 +87,11 @@ export default function MyAds() {
                                         >
                                             <Zap className="w-3 md:w-3.5 h-3 md:h-3.5 fill-current" />
                                         </button>
-                                        <button className="p-2 bg-stone-50 text-stone-400 rounded-lg hover:text-stone-900 hover:bg-white transition-all shadow-sm">
+                                        <button
+                                            onClick={() => navigate(`/ilan-duzenle/${ad.id}`)}
+                                            title="Düzenle"
+                                            className="p-2 bg-stone-50 text-stone-400 rounded-lg hover:text-stone-900 hover:bg-white transition-all shadow-sm"
+                                        >
                                             <Edit2 className="w-3 md:w-3.5 h-3 md:h-3.5" />
                                         </button>
                                         <button onClick={() => handleDelete(ad.id)} className="p-2 bg-red-50 text-red-400 rounded-lg hover:text-red-500 hover:bg-white transition-all shadow-sm">

@@ -96,6 +96,14 @@ class ApiClient {
   getItemById(id) { return this.get(`/items/${id}`); }
   createItem(data) { return this.post('/items', data); }
   updateItem(id, data) { return this.patch(`/items/${id}`, data); }
+  addItemImages(id, formData) {
+    const url = `${this.baseURL}/items/${id}/images`;
+    const headers = {};
+    const token = this.getToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return fetch(url, { method: 'POST', headers, body: formData }).then(r => r.json());
+  }
+  deleteItemImage(id, imageId) { return this.delete(`/items/${id}/images/${imageId}`); }
   deleteItem(id) { return this.delete(`/items/${id}`); }
   toggleFavorite(id) { return this.post(`/items/${id}/favorite`); }
   // Aylık ilan limiti

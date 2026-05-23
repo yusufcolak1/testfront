@@ -24,6 +24,7 @@ import AdminSupportRequests from './pages/admin/SupportRequests';
 import Home from './pages/Home';
 import Favorites from './pages/Favorites';
 import CreateAd from './pages/CreateAd';
+import EditAd from './pages/EditAd';
 import Messages from './pages/Messages';
 import Leaderboard from './pages/Leaderboard';
 import Premium from './pages/Premium';
@@ -472,6 +473,7 @@ function App() {
             <Route path="/kategori/:slug" element={<CategoryPage />} />
             <Route path="/favoriler" element={<Favorites />} />
             <Route path="/ilan-ver" element={<CreateAd />} />
+            <Route path="/ilan-duzenle/:id" element={<EditAd />} />
             <Route path="/mesajlar" element={<Messages />} />
             <Route path="/liderler" element={<Leaderboard />} />
             <Route path="/premium" element={<Premium />} />

@@ -6,6 +6,7 @@ const express = require('express');
 const router = express.Router();
 
 const itemController = require('../controllers/itemController');
+const { prisma } = require('../config/database');
 const { authenticate, optionalAuthenticate } = require('../middlewares/auth');
 const { validate, validateQuery } = require('../middlewares/validate');
 const { createItemSchema, updateItemSchema, itemQuerySchema } = require('../utils/validators/itemSchemas');
@@ -30,6 +31,31 @@ router.patch('/:id', authenticate, validate(updateItemSchema), itemController.up
 
 // DELETE /api/items/:id - İlan sil (korumalı)
 router.delete('/:id', authenticate, itemController.deleteItem);
+
+// POST /api/items/:id/images - İlana yeni fotoğraf ekle (korumalı, multer)
+const { handleUploadMultiple } = require('../config/multer');
+const { AppError, asyncHandler } = require('../middlewares/errorHandler');
+router.post('/:id/images', authenticate, handleUploadMultiple, asyncHandler(async (req, res) => {
+  const item = await prisma.item.findUnique({ where: { id: req.params.id }, select: { userId: true, images: true } });
+  if (!item) throw new AppError('İlan bulunamadı.', 404);
+  if (item.userId !== req.user.id) throw new AppError('Bu ilanı düzenleme yetkiniz yok.', 403);
+  if (!req.files || req.files.length === 0) throw new AppError('Hiç fotoğraf yüklenmedi.', 400);
+  const totalImages = item.images.length + req.files.length;
+  if (totalImages > 10) throw new AppError('Bir ilanda en fazla 10 fotoğraf olabilir.', 400);
+  const created = await Promise.all(req.files.map((f, i) =>
+    prisma.itemImage.create({ data: { itemId: req.params.id, imageUrl: `/uploads/${f.filename}`, order: item.images.length + i } })
+  ));
+  res.json({ success: true, data: created });
+}));
+
+// DELETE /api/items/:id/images/:imageId - İlandan fotoğraf sil (korumalı)
+router.delete('/:id/images/:imageId', authenticate, asyncHandler(async (req, res) => {
+  const item = await prisma.item.findUnique({ where: { id: req.params.id }, select: { userId: true } });
+  if (!item) throw new AppError('İlan bulunamadı.', 404);
+  if (item.userId !== req.user.id) throw new AppError('Bu ilanı düzenleme yetkiniz yok.', 403);
+  await prisma.itemImage.delete({ where: { id: req.params.imageId } });
+  res.json({ success: true });
+}));
 
 // POST /api/items/:id/favorite - Favori toggle (korumalı)
 router.post('/:id/favorite', authenticate, itemController.toggleFavorite);
