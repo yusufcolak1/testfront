@@ -589,25 +589,40 @@ export default function Discover() {
 
                                             {/* Görsel alanı — mobilde tam fotoğraf, tablette/desktop'ta cover */}
                                             <div className="relative flex-1 min-h-0 w-full overflow-hidden">
-                                                <div
-                                                    className="absolute inset-0 flex overflow-x-scroll snap-x snap-mandatory no-scrollbar"
-                                                    onScroll={(e) => handleHorizontalScroll(ad.id, e)}
-                                                >
-                                                    {ad.images.map((img, i) => (
-                                                        <div key={i} className="min-w-full h-full snap-start shrink-0 flex items-center justify-center bg-stone-950">
-                                                            <img
-                                                                src={img}
-                                                                alt=""
-                                                                className="w-full h-full object-contain lg:object-cover"
-                                                            />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <div className="absolute top-3 md:top-24 left-1/2 -translate-x-1/2 flex gap-1.5 z-[2100] pt-safe">
-                                                    {ad.images.map((_, i) => (
-                                                        <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === currentImgIndex ? 'w-4 md:w-6 bg-amber-500' : 'w-1 md:w-1.5 bg-white/30'}`} />
-                                                    ))}
-                                                </div>
+                                                {ad.images.length > 1 ? (
+                                                    /* Birden fazla fotoğraf: yatay kaydırmalı galeri */
+                                                    <div
+                                                        className="absolute inset-0 flex overflow-x-scroll snap-x snap-mandatory no-scrollbar"
+                                                        onScroll={(e) => handleHorizontalScroll(ad.id, e)}
+                                                    >
+                                                        {ad.images.map((img, i) => (
+                                                            <div key={i} className="min-w-full h-full snap-start shrink-0 flex items-center justify-center bg-stone-950">
+                                                                <img
+                                                                    src={img}
+                                                                    alt=""
+                                                                    className="w-full h-full object-contain lg:object-cover"
+                                                                />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    /* Tek fotoğraf: kaydırma yok, tam genişlik ortalı */
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-stone-950">
+                                                        <img
+                                                            src={ad.images[0]}
+                                                            alt=""
+                                                            className="w-full h-full object-contain lg:object-cover"
+                                                        />
+                                                    </div>
+                                                )}
+                                                {/* Nokta göstergesi: sadece birden fazla fotoğrafta */}
+                                                {ad.images.length > 1 && (
+                                                    <div className="absolute top-3 md:top-24 left-1/2 -translate-x-1/2 flex gap-1.5 z-[2100] pt-safe">
+                                                        {ad.images.map((_, i) => (
+                                                            <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === currentImgIndex ? 'w-4 md:w-6 bg-amber-500' : 'w-1 md:w-1.5 bg-white/30'}`} />
+                                                        ))}
+                                                    </div>
+                                                )}
                                                 <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/50 to-transparent md:from-black/30" />
                                             </div>
 
