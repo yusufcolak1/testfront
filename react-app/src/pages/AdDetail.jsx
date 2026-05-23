@@ -246,7 +246,7 @@ export default function AdDetail() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
                     <div className="lg:col-span-6 space-y-3 md:space-y-4">
-                        <div className="relative aspect-square max-h-[55vh] lg:max-h-[480px] w-full rounded-[1.5rem] md:rounded-[2rem] overflow-hidden bg-white shadow-xl shadow-stone-900/10 group">
+                        <div className="relative aspect-[3/4] max-h-[70vh] lg:max-h-[560px] w-full rounded-[1.5rem] md:rounded-[2rem] overflow-hidden bg-white shadow-xl shadow-stone-900/10 group">
                             <img src={images[activeImg]} alt={item.title} className="w-full h-full object-cover" />
                             {images.length > 1 && (
                                 <>
