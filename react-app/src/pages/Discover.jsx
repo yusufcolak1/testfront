@@ -150,7 +150,7 @@ export default function Discover() {
     }, [viewMode]);
 
     const handleCopyLink = () => {
-        navigator.clipboard.writeText(`https://takason.com/ilan/${sharingAdId}`);
+        navigator.clipboard.writeText(`https://takason.com.tr/ilan/${sharingAdId}`);
         setCopySuccess(true);
         setTimeout(() => setCopySuccess(false), 2000);
     };
