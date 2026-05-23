@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Youtube, Phone, Mail, MapPin, ArrowRight, ShieldCheck, HelpCircle, FileText } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 
 export default function Footer() {
     const [scale, setScale] = useState(1);
     const [baseHeight, setBaseHeight] = useState(500);
     const footerRef = useRef(null);
+    const { settings } = useSettings();
+
+    const contactEmail = settings['site.contactEmail'] || 'destek@takason.com';
+    const contactPhone = settings['site.contactPhone'] || '0850 123 45 67';
+    const slogan = settings['site.slogan'] || 'Sizin paranız burada geçmez.';
 
     useEffect(() => {
         const handleResize = () => {
@@ -54,7 +60,7 @@ export default function Footer() {
                                     TAKASON<span className="text-amber-500">.</span>
                                 </h2>
                                 <p className="text-stone-400 text-sm font-medium leading-relaxed italic font-serif">
-                                    "Sizin paranız burada geçmez." Türkiye'nin en büyük takas topluluğuna hoş geldin.
+                                    "{slogan}" Türkiye'nin en büyük takas topluluğuna hoş geldin.
                                 </p>
                             </div>
                             <div className="flex gap-4">
@@ -122,7 +128,7 @@ export default function Footer() {
                                     </div>
                                     <div>
                                         <p className="text-[10px] uppercase tracking-widest text-stone-600 font-black">E-POSTA</p>
-                                        <p className="text-sm font-bold text-stone-300">destek@takason.com</p>
+                                        <p className="text-sm font-bold text-stone-300">{contactEmail}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4 text-stone-400 group">
@@ -131,7 +137,7 @@ export default function Footer() {
                                     </div>
                                     <div>
                                         <p className="text-[10px] uppercase tracking-widest text-stone-600 font-black">MÜŞTERİ HİZMETLERİ</p>
-                                        <p className="text-sm font-bold text-stone-300">0850 123 45 67</p>
+                                        <p className="text-sm font-bold text-stone-300">{contactPhone}</p>
                                     </div>
                                 </div>
                             </div>

@@ -27,7 +27,17 @@ export default function HelpCenter() {
     const [faqs, setFaqs] = useState([]);
     const [contactSettings, setContactSettings] = useState(defaultContactSettings);
 
-    const getContactSetting = (key) => contactSettings[key] ?? defaultContactSettings[key];
+    // site.contactEmail / site.contactPhone are the authoritative values from the
+    // general settings group; fall back to support.contact.* if not set.
+    const getContactSetting = (key) => {
+        if (key === 'support.contact.email') {
+            return contactSettings['site.contactEmail'] || contactSettings[key] || defaultContactSettings[key];
+        }
+        if (key === 'support.contact.phone') {
+            return contactSettings['site.contactPhone'] || contactSettings[key] || defaultContactSettings[key];
+        }
+        return contactSettings[key] ?? defaultContactSettings[key];
+    };
     const subjectOptions = Array.isArray(getContactSetting('support.contact.subjects'))
         ? getContactSetting('support.contact.subjects')
         : defaultContactSettings['support.contact.subjects'];
