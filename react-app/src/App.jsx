@@ -296,7 +296,7 @@ function App() {
                 { name: 'Keşfet', path: '/kesfet', icon: Compass },
                 { name: 'İlan Ver', path: '/ilan-ver', icon: PlusCircle },
                 { name: 'Premium', path: '/premium', icon: Crown },
-                { name: 'Mesajlar', path: '/mesajlar', icon: MessageCircle, requireAuth: true },
+                { name: 'Mesajlar', path: '/mesajlar', icon: MessageCircle, requireAuth: true, unread: unreadMessages },
                 { name: 'Favorilerim', path: '/favoriler', icon: Heart }
               ].filter(item => !item.requireAuth || isAuthenticated).map((item) => (
                 <Link
@@ -310,11 +310,21 @@ function App() {
                   {/* İkon: Sadece arama açıkken görünür */}
                   <div className={`flex lg:absolute lg:inset-0 items-center justify-center transition-all duration-500 ${isSearchOpen ? 'lg:opacity-100 lg:scale-100' : 'lg:opacity-0 lg:scale-0 lg:pointer-events-none'}`}>
                     <item.icon className="w-5 h-5 lg:w-6 lg:h-6" />
+                    {item.unread > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center leading-none">
+                        {item.unread > 9 ? '9+' : item.unread}
+                      </span>
+                    )}
                   </div>
 
                   {/* Metin: Sadece masaüstünde arama kapalıyken görünür */}
                   <span className={`hidden lg:block transition-all duration-500 whitespace-nowrap ${isSearchOpen ? 'opacity-0 scale-75 w-0 overflow-hidden pointer-events-none' : 'opacity-100 scale-100'}`}>
                     {item.name}
+                    {item.unread > 0 && !isSearchOpen && (
+                      <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[8px] font-black rounded-full leading-none">
+                        {item.unread > 9 ? '9+' : item.unread}
+                      </span>
+                    )}
                   </span>
 
                   <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 h-0.5 bg-stone-900 rounded-full transition-all duration-500 ${isSearchOpen && 'opacity-0'}
@@ -415,7 +425,7 @@ function App() {
             { name: 'Keşfet', path: '/kesfet', icon: Compass },
             { name: 'İlan Ver', path: '/ilan-ver', icon: PlusCircle, special: true },
             { name: 'Premium', path: '/premium', icon: Crown },
-            { name: 'Mesaj', path: '/mesajlar', icon: MessageCircle, requireAuth: true },
+            { name: 'Mesaj', path: '/mesajlar', icon: MessageCircle, requireAuth: true, unread: unreadMessages },
             { name: 'Favoriler', path: '/favoriler', icon: Heart }
           ].filter(item => !item.requireAuth || isAuthenticated).map((item) => {
             const isActive = location.pathname === item.path;
@@ -429,11 +439,16 @@ function App() {
                 className={`flex flex-col items-center justify-center gap-1 transition-all relative ${item.special ? '-translate-y-4' : ''}`}
               >
                 <div className={`
-                  flex items-center justify-center transition-all duration-300
+                  flex items-center justify-center transition-all duration-300 relative
                   ${item.special ? 'w-14 h-14 bg-stone-900 text-[#FFF8E7] rounded-[1.5rem] shadow-2xl scale-110' : 'w-8 h-8'}
                   ${!item.special && isActive ? 'text-stone-900 scale-110' : 'text-stone-500'}
                 `}>
                   <Icon className={item.special ? 'w-7 h-7' : 'w-6 h-6'} />
+                  {item.unread > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center leading-none">
+                      {item.unread > 9 ? '9+' : item.unread}
+                    </span>
+                  )}
                 </div>
                 {!item.special && (
                   <span className={`text-[8px] font-black uppercase tracking-tight transition-all ${isActive ? 'text-stone-900' : 'text-stone-500'}`}>

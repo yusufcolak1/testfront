@@ -51,6 +51,17 @@ export default function Messages() {
     useEffect(() => { if (isAuthenticated) loadList(); }, [isAuthenticated]);
     useEffect(() => { if (activeRoomId) loadRoom(activeRoomId); }, [activeRoomId]);
 
+    // Yeni mesajları yakalamak için 10 sn'de bir konuşma listesini yenile
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        const t = setInterval(() => {
+            loadList();
+            // Açık oda varsa onu da yenile (başka kullanıcıdan gelen mesajlar için)
+            if (activeRoomId) loadRoom(activeRoomId);
+        }, 10000);
+        return () => clearInterval(t);
+    }, [isAuthenticated, activeRoomId]);
+
     const send = async (e) => {
         e?.preventDefault();
         if (!text.trim() || !activeRoomId) return;
@@ -78,7 +89,14 @@ export default function Messages() {
                             <MessageSquare className="w-4 h-4 md:w-6 md:h-6 text-[#f5f1ed]" />
                         </div>
                         <div>
-                            <h2 className="text-2xl md:text-4xl font-serif text-stone-900 tracking-tighter italic font-black leading-none mb-1">Mesajlar</h2>
+                            <div className="flex items-center gap-3 leading-none mb-1">
+                                <h2 className="text-2xl md:text-4xl font-serif text-stone-900 tracking-tighter italic font-black leading-none">Mesajlar</h2>
+                                {conversations.reduce((s, c) => s + (c.unread || 0), 0) > 0 && (
+                                    <span className="inline-flex items-center justify-center px-2 py-0.5 bg-red-500 text-white text-[10px] font-black rounded-full leading-none animate-pulse">
+                                        {conversations.reduce((s, c) => s + (c.unread || 0), 0)} okunmamış
+                                    </span>
+                                )}
+                            </div>
                             <p className="text-[9px] md:text-xs text-stone-400 italic">{conversations.length} konuşma</p>
                         </div>
                     </div>
@@ -99,16 +117,23 @@ export default function Messages() {
                             ) : conversations.length === 0 ? (
                                 <div className="text-center text-stone-400 py-8 text-xs italic">Henüz konuşman yok.</div>
                             ) : conversations.map((c) => (
-                                <div key={c.id} onClick={() => { setActiveRoomId(c.id); setShowChatMobile(true); }} className={`p-4 rounded-2xl flex items-center gap-4 cursor-pointer transition-all ${activeRoomId === c.id ? 'bg-white shadow-md' : 'hover:bg-white/50'}`}>
-                                    <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-stone-100 flex items-center justify-center font-serif text-base font-black text-stone-900 border-2 border-white shadow-sm shrink-0">
-                                        {c.initials}
+                                <div key={c.id} onClick={() => { setActiveRoomId(c.id); setShowChatMobile(true); }} className={`p-4 rounded-2xl flex items-center gap-4 cursor-pointer transition-all ${activeRoomId === c.id ? 'bg-white shadow-md' : 'hover:bg-white/50'} ${c.unread > 0 && activeRoomId !== c.id ? 'bg-amber-50/60' : ''}`}>
+                                    <div className="relative shrink-0">
+                                        <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-stone-100 flex items-center justify-center font-serif text-base font-black text-stone-900 border-2 border-white shadow-sm">
+                                            {c.initials}
+                                        </div>
+                                        {c.unread > 0 && activeRoomId !== c.id && (
+                                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center leading-none">
+                                                {c.unread > 9 ? '9+' : c.unread}
+                                            </span>
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-baseline gap-2">
-                                            <h4 className="font-serif text-sm md:text-base text-stone-900 truncate">{c.user}</h4>
+                                            <h4 className={`font-serif text-sm md:text-base truncate ${c.unread > 0 && activeRoomId !== c.id ? 'text-stone-900 font-black' : 'text-stone-900'}`}>{c.user}</h4>
                                             <span className="text-[9px] text-stone-400 font-black uppercase tracking-widest shrink-0">{c.time ? new Date(c.time).toLocaleDateString('tr-TR') : ''}</span>
                                         </div>
-                                        <p className="text-[11px] truncate font-medium text-stone-400">{c.msg || '—'}</p>
+                                        <p className={`text-[11px] truncate ${c.unread > 0 && activeRoomId !== c.id ? 'font-black text-stone-700' : 'font-medium text-stone-400'}`}>{c.msg || '—'}</p>
                                     </div>
                                 </div>
                             ))}
