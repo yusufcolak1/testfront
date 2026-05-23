@@ -244,9 +244,9 @@ export default function AdDetail() {
                     <span className="text-[9px] md:text-[10px] font-black tracking-widest uppercase italic font-serif">ANA SAYFAYA DÖN</span>
                 </Link>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                    <div className="lg:col-span-7 space-y-4 md:space-y-6">
-                        <div className="relative aspect-square rounded-[2rem] md:rounded-[3rem] overflow-hidden bg-white shadow-2xl shadow-stone-900/10 group">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+                    <div className="lg:col-span-6 space-y-3 md:space-y-4">
+                        <div className="relative aspect-[4/3] md:aspect-square lg:aspect-[4/3] max-h-[60vh] lg:max-h-[520px] rounded-[1.5rem] md:rounded-[2rem] overflow-hidden bg-white shadow-xl shadow-stone-900/10 group">
                             <img src={images[activeImg]} alt={item.title} className="w-full h-full object-cover" />
                             {images.length > 1 && (
                                 <>
@@ -261,9 +261,9 @@ export default function AdDetail() {
                         </div>
 
                         {images.length > 1 && (
-                            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                            <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2 no-scrollbar">
                                 {images.map((img, i) => (
-                                    <button key={i} onClick={() => setActiveImg(i)} className={`relative w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${activeImg === i ? 'border-[#4a2008] scale-105 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}>
+                                    <button key={i} onClick={() => setActiveImg(i)} className={`relative w-16 h-16 md:w-20 md:h-20 rounded-xl md:rounded-2xl overflow-hidden border-2 transition-all shrink-0 ${activeImg === i ? 'border-[#4a2008] scale-105 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}>
                                         <img src={img} className="w-full h-full object-cover" alt="" />
                                     </button>
                                 ))}
@@ -271,7 +271,7 @@ export default function AdDetail() {
                         )}
                     </div>
 
-                    <div className="lg:col-span-5 space-y-6 md:space-y-8">
+                    <div className="lg:col-span-6 space-y-6 md:space-y-8">
                         <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-stone-100 p-6 md:p-8 shadow-xl space-y-6 relative">
                             <div className="space-y-3 md:space-y-4">
                                 <div className="flex flex-wrap items-center gap-2">
