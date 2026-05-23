@@ -6,11 +6,14 @@ const { prisma } = require('../config/database');
 
 let cache = null;
 let cacheTime = 0;
-const TTL = 5 * 60 * 1000; // 5 dakika (30sn yerine)
+// PM2 cluster'da her process kendi cache'ini tutar; admin güncellemesi diğer
+// process'lere yayılmaz. Settings tablosu küçük (~24 kayıt) olduğundan
+// cache'i devre dışı bırakıp her seferinde DB'den okumak daha güvenli.
+const TTL = 0; // cache kapalı
 
 async function getAll(force = false) {
   const now = Date.now();
-  if (!force && cache && (now - cacheTime) < TTL) return cache;
+  if (!force && TTL > 0 && cache && (now - cacheTime) < TTL) return cache;
   const rows = await prisma.siteSetting.findMany();
   cache = {};
   for (const r of rows) {

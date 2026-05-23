@@ -310,7 +310,7 @@ router.put('/settings', asyncHandler(async (req, res) => {
     if (!i.key) continue;
     await settings.set(i.key, i.value, { type: i.type, group: i.group, isPublic: i.isPublic, description: i.description });
   }
-  // Mailer cache invalidate
+  settings.invalidate();
   mailer.reset();
   res.json({ success: true, message: `${items.length} ayar güncellendi` });
 }));
