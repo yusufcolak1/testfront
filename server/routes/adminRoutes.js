@@ -19,7 +19,7 @@ router.use(authenticate, authorize('ADMIN'));
 // DASHBOARD STATS
 // ============================================================
 router.get('/stats', asyncHandler(async (req, res) => {
-  const [users, items, trades, faqs, categories, activeItems, pendingTrades] = await Promise.all([
+  const [users, items, trades, faqs, categories, activeItems, pendingTrades, premiumUsers, completedTrades, messages] = await Promise.all([
     prisma.user.count(),
     prisma.item.count(),
     prisma.trade.count(),
@@ -27,8 +27,84 @@ router.get('/stats', asyncHandler(async (req, res) => {
     prisma.category.count(),
     prisma.item.count({ where: { status: 'ACTIVE' } }),
     prisma.trade.count({ where: { status: 'PENDING' } }),
+    prisma.profile.count({ where: { isPremium: true } }),
+    prisma.trade.count({ where: { status: 'COMPLETED' } }),
+    prisma.message.count(),
   ]);
-  res.json({ success: true, data: { users, items, trades, faqs, categories, activeItems, pendingTrades } });
+  res.json({ success: true, data: { users, items, trades, faqs, categories, activeItems, pendingTrades, premiumUsers, completedTrades, messages } });
+}));
+
+// ============================================================
+// DAILY ACTIVITY STATS (son N gün)
+// ============================================================
+router.get('/daily-stats', asyncHandler(async (req, res) => {
+  const days = Math.min(parseInt(req.query.days) || 30, 90);
+
+  const [newUsers, newItems, newTrades, completedTrades, newMessages] = await Promise.all([
+    // Yeni kullanıcılar günlük
+    prisma.$queryRaw`
+      SELECT DATE(created_at) as date, COUNT(*)::int as count
+      FROM users
+      WHERE created_at >= NOW() - (${days} || ' days')::interval
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `,
+    // Yeni ilanlar günlük
+    prisma.$queryRaw`
+      SELECT DATE(created_at) as date, COUNT(*)::int as count
+      FROM items
+      WHERE created_at >= NOW() - (${days} || ' days')::interval
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `,
+    // Yeni takas teklifleri günlük
+    prisma.$queryRaw`
+      SELECT DATE(created_at) as date, COUNT(*)::int as count
+      FROM trades
+      WHERE created_at >= NOW() - (${days} || ' days')::interval
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `,
+    // Tamamlanan takaslar günlük
+    prisma.$queryRaw`
+      SELECT DATE(updated_at) as date, COUNT(*)::int as count
+      FROM trades
+      WHERE status = 'COMPLETED'
+        AND updated_at >= NOW() - (${days} || ' days')::interval
+      GROUP BY DATE(updated_at)
+      ORDER BY date ASC
+    `,
+    // Yeni mesajlar günlük
+    prisma.$queryRaw`
+      SELECT DATE(created_at) as date, COUNT(*)::int as count
+      FROM messages
+      WHERE created_at >= NOW() - (${days} || ' days')::interval
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `,
+  ]);
+
+  // Son N güne ait tarih sırası oluştur (eksik günleri 0 ile doldur)
+  const dateMap = {};
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    dateMap[key] = { date: key, newUsers: 0, newItems: 0, newTrades: 0, completedTrades: 0, newMessages: 0 };
+  }
+
+  const merge = (rows, field) => rows.forEach(r => {
+    const key = r.date instanceof Date ? r.date.toISOString().slice(0, 10) : String(r.date).slice(0, 10);
+    if (dateMap[key]) dateMap[key][field] = Number(r.count);
+  });
+
+  merge(newUsers,        'newUsers');
+  merge(newItems,        'newItems');
+  merge(newTrades,       'newTrades');
+  merge(completedTrades, 'completedTrades');
+  merge(newMessages,     'newMessages');
+
+  res.json({ success: true, data: Object.values(dateMap) });
 }));
 
 // ============================================================

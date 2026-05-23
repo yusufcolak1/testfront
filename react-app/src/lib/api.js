@@ -186,6 +186,7 @@ class ApiClient {
   // ---- Admin ----
   admin = {
     stats: () => this.get('/admin/stats'),
+    dailyStats: (days = 30) => this.get(`/admin/daily-stats?days=${days}`),
     // Support
     listSupportRequests: () => this.get('/admin/support-requests'),
     // Users
