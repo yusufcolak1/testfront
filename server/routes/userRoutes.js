@@ -646,4 +646,101 @@ router.patch('/notifications/:id/read', asyncHandler(async (req, res) => {
   res.json({ success: true });
 }));
 
+// ============================================================
+// REVIEWS (Kullanıcı ve Ürün Puanlama) - raw SQL (tablolar prisma şemasında yok)
+// ============================================================
+
+// GET /reviews/user/:userId — kullanıcının aldığı puanlar (public)
+router.get('/reviews/user/:userId', asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const rows = await prisma.$queryRaw`
+    SELECT ur.id, ur.score, ur.comment, ur.created_at,
+           p.first_name, p.last_name, p.avatar_url
+    FROM user_reviews ur
+    JOIN users u ON u.id = ur.author_id
+    LEFT JOIN profiles p ON p.user_id = ur.author_id
+    WHERE ur.user_id = ${userId}
+    ORDER BY ur.created_at DESC
+    LIMIT 50
+  `;
+  const avg = rows.length ? rows.reduce((s, r) => s + r.score, 0) / rows.length : null;
+  res.json({ success: true, data: { reviews: rows.map(r => ({
+    id: r.id, score: Number(r.score), comment: r.comment, createdAt: r.created_at,
+    author: { firstName: r.first_name, lastName: r.last_name, avatarUrl: r.avatar_url },
+  })), avg, count: rows.length } });
+}));
+
+// POST /reviews/user/:userId — kullanıcıya puan ver
+router.post('/reviews/user/:userId', authenticate, asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const { score, comment } = req.body;
+  if (userId === req.user.id) throw new AppError('Kendinize puan veremezsiniz.', 400);
+  if (!score || score < 1 || score > 5) throw new AppError('Puan 1-5 arasında olmalı.', 400);
+
+  // target kullanıcı var mı?
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target) throw new AppError('Kullanıcı bulunamadı.', 404);
+
+  await prisma.$executeRaw`
+    INSERT INTO user_reviews (id, author_id, user_id, score, comment)
+    VALUES (gen_random_uuid()::text, ${req.user.id}, ${userId}, ${Math.round(score)}, ${comment || null})
+    ON CONFLICT (author_id, user_id) DO UPDATE SET score = EXCLUDED.score, comment = EXCLUDED.comment
+  `;
+  res.json({ success: true, message: 'Puan kaydedildi.' });
+}));
+
+// GET /reviews/item/:itemId — ürünün aldığı puanlar (public)
+router.get('/reviews/item/:itemId', asyncHandler(async (req, res) => {
+  const { itemId } = req.params;
+  const rows = await prisma.$queryRaw`
+    SELECT ir.id, ir.score, ir.comment, ir.created_at,
+           p.first_name, p.last_name, p.avatar_url
+    FROM item_reviews ir
+    JOIN users u ON u.id = ir.author_id
+    LEFT JOIN profiles p ON p.user_id = ir.author_id
+    WHERE ir.item_id = ${itemId}
+    ORDER BY ir.created_at DESC
+    LIMIT 50
+  `;
+  const avg = rows.length ? rows.reduce((s, r) => s + r.score, 0) / rows.length : null;
+  res.json({ success: true, data: { reviews: rows.map(r => ({
+    id: r.id, score: Number(r.score), comment: r.comment, createdAt: r.created_at,
+    author: { firstName: r.first_name, lastName: r.last_name, avatarUrl: r.avatar_url },
+  })), avg, count: rows.length } });
+}));
+
+// POST /reviews/item/:itemId — ürüne puan ver
+router.post('/reviews/item/:itemId', authenticate, asyncHandler(async (req, res) => {
+  const { itemId } = req.params;
+  const { score, comment } = req.body;
+  if (!score || score < 1 || score > 5) throw new AppError('Puan 1-5 arasında olmalı.', 400);
+
+  const item = await prisma.item.findUnique({ where: { id: itemId } });
+  if (!item) throw new AppError('İlan bulunamadı.', 404);
+  if (item.userId === req.user.id) throw new AppError('Kendi ilanınıza puan veremezsiniz.', 400);
+
+  await prisma.$executeRaw`
+    INSERT INTO item_reviews (id, author_id, item_id, score, comment)
+    VALUES (gen_random_uuid()::text, ${req.user.id}, ${itemId}, ${Math.round(score)}, ${comment || null})
+    ON CONFLICT (author_id, item_id) DO UPDATE SET score = EXCLUDED.score, comment = EXCLUDED.comment
+  `;
+  res.json({ success: true, message: 'Puan kaydedildi.' });
+}));
+
+// GET /reviews/my/user/:userId — giriş yapan kullanıcının bu kişiye verdiği puan
+router.get('/reviews/my/user/:userId', authenticate, asyncHandler(async (req, res) => {
+  const rows = await prisma.$queryRaw`
+    SELECT score, comment FROM user_reviews WHERE author_id = ${req.user.id} AND user_id = ${req.params.userId}
+  `;
+  res.json({ success: true, data: rows[0] || null });
+}));
+
+// GET /reviews/my/item/:itemId — giriş yapan kullanıcının bu ürüne verdiği puan
+router.get('/reviews/my/item/:itemId', authenticate, asyncHandler(async (req, res) => {
+  const rows = await prisma.$queryRaw`
+    SELECT score, comment FROM item_reviews WHERE author_id = ${req.user.id} AND item_id = ${req.params.itemId}
+  `;
+  res.json({ success: true, data: rows[0] || null });
+}));
+
 module.exports = router;

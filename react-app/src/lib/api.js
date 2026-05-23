@@ -139,6 +139,14 @@ class ApiClient {
   getMyFavorites() { return this.get('/users/me/favorites'); }
   updateMyProfile(data) { return this.patch('/users/me/profile', data); }
 
+  // ---- Reviews ----
+  getUserReviews(userId) { return this.get(`/reviews/user/${userId}`); }
+  rateUser(userId, data) { return this.post(`/reviews/user/${userId}`, data); }
+  getItemReviews(itemId) { return this.get(`/reviews/item/${itemId}`); }
+  rateItem(itemId, data) { return this.post(`/reviews/item/${itemId}`, data); }
+  getMyUserReview(userId) { return this.get(`/reviews/my/user/${userId}`); }
+  getMyItemReview(itemId) { return this.get(`/reviews/my/item/${itemId}`); }
+
   // ---- Addresses ----
   getAddresses() { return this.get('/addresses'); }
   createAddress(data) { return this.post('/addresses', data); }

@@ -1,9 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { MapPin, Shield, Heart, MessageCircle, ArrowRight, Zap, CheckCircle2, ChevronLeft, ChevronRight, ArrowLeft, Eye, Star } from 'lucide-react';
+import { MapPin, Shield, Heart, MessageCircle, ArrowRight, Zap, CheckCircle2, ChevronLeft, ChevronRight, ArrowLeft, Eye, Star, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import { getFullImageUrl } from '../utils/helpers';
+
+// ─── Yıldız Seçici ────────────────────────────────────────────
+function StarPicker({ value, onChange }) {
+    const [hovered, setHovered] = useState(0);
+    return (
+        <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                    key={s}
+                    type="button"
+                    onMouseEnter={() => setHovered(s)}
+                    onMouseLeave={() => setHovered(0)}
+                    onClick={() => onChange(s)}
+                    className="transition-transform hover:scale-110 focus:outline-none"
+                >
+                    <Star className={`w-7 h-7 transition-colors ${(hovered || value) >= s ? 'text-amber-400 fill-amber-400' : 'text-stone-600'}`} />
+                </button>
+            ))}
+        </div>
+    );
+}
+
+function StarDisplay({ value, size = 'sm' }) {
+    const sz = size === 'lg' ? 'w-5 h-5' : 'w-3.5 h-3.5';
+    return (
+        <div className="flex gap-0.5">
+            {[1, 2, 3, 4, 5].map((s) => (
+                <Star key={s} className={`${sz} ${Math.round(value) >= s ? 'text-amber-400 fill-amber-400' : 'text-stone-600'}`} />
+            ))}
+        </div>
+    );
+}
 
 export default function AdDetail() {
     const { id } = useParams();
@@ -27,6 +59,35 @@ export default function AdDetail() {
     // Sosyal Yorum state'leri
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
+
+    // Ürün Puanlama state'leri
+    const [itemReviews, setItemReviews] = useState([]);
+    const [itemReviewAvg, setItemReviewAvg] = useState(null);
+    const [itemReviewCount, setItemReviewCount] = useState(0);
+    const [myItemReview, setMyItemReview] = useState(null);
+    const [reviewScore, setReviewScore] = useState(0);
+    const [reviewComment, setReviewComment] = useState('');
+    const [showReviewForm, setShowReviewForm] = useState(false);
+    const [savingReview, setSavingReview] = useState(false);
+    const [reviewErr, setReviewErr] = useState('');
+    const [reviewsExpanded, setReviewsExpanded] = useState(false);
+
+    const loadItemReviews = useCallback(async () => {
+        try {
+            const r = await api.getItemReviews(id);
+            setItemReviews(r.data.reviews || []);
+            setItemReviewAvg(r.data.avg);
+            setItemReviewCount(r.data.count);
+        } catch { /* silent */ }
+        if (isAuthenticated) {
+            try {
+                const r2 = await api.getMyItemReview(id);
+                const rev = r2.data || null;
+                setMyItemReview(rev);
+                if (rev) { setReviewScore(rev.score); setReviewComment(rev.comment || ''); }
+            } catch { /* silent */ }
+        }
+    }, [id, isAuthenticated]);
 
     useEffect(() => {
         let cancelled = false;
@@ -59,8 +120,9 @@ export default function AdDetail() {
             } catch (e) { if (!cancelled) setError(e.message); }
             finally { if (!cancelled) setLoading(false); }
         })();
+        loadItemReviews();
         return () => { cancelled = true; };
-    }, [id]);
+    }, [id, loadItemReviews]);
 
     // Takas/mesaj hakkı kontrolü (kendi ilanı değilse) - Auth durumu değiştiğinde yeniden tetiklenmesi için ayrı useEffect
     useEffect(() => {
@@ -148,6 +210,19 @@ export default function AdDetail() {
             setNewComment('');
         } catch (e) { alert(e.message); }
         finally { setActing(false); }
+    };
+
+    const handleSubmitReview = async (e) => {
+        e.preventDefault();
+        if (!requireAuth()) return;
+        if (!reviewScore) { setReviewErr('Lütfen bir puan seçin.'); return; }
+        setSavingReview(true); setReviewErr('');
+        try {
+            await api.rateItem(id, { score: reviewScore, comment: reviewComment.trim() || undefined });
+            setShowReviewForm(false);
+            loadItemReviews();
+        } catch (ex) { setReviewErr(ex.message || 'Bir hata oluştu.'); }
+        finally { setSavingReview(false); }
     };
 
     if (loading) return <div className="min-h-screen bg-[#f5f1ed] flex items-center justify-center text-stone-400">Yükleniyor…</div>;
@@ -408,6 +483,130 @@ export default function AdDetail() {
                                     )}
                                 </div>
                             ))
+                        )}
+                    </div>
+                </div>
+
+                {/* --- Ürün Değerlendirmeleri --- */}
+                <div className="mt-12 bg-stone-900 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
+                    <div className="flex items-center gap-4 mb-8 relative z-10">
+                        <div className="p-3 bg-white/10 text-white rounded-2xl backdrop-blur-xl border border-white/10">
+                            <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-serif font-black text-white italic">
+                                Ürün <span style={{ color: '#FFF8E7' }}>Değerlendirmeleri</span>
+                            </h2>
+                            <p className="text-xs text-stone-400 font-bold uppercase tracking-widest">
+                                {itemReviewCount > 0
+                                    ? `${itemReviewCount} değerlendirme · Ort. ${itemReviewAvg?.toFixed(1)}/5`
+                                    : 'Henüz değerlendirme yok'}
+                            </p>
+                        </div>
+                        {itemReviewAvg !== null && (
+                            <div className="ml-auto flex items-center gap-2">
+                                <StarDisplay value={itemReviewAvg} size="lg" />
+                                <span className="text-2xl font-serif font-black text-white">{itemReviewAvg.toFixed(1)}</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Puan verme alanı */}
+                    {isAuthenticated && item?.user?.id !== user?.id && (
+                        <div className="mb-8 relative z-10">
+                            {!showReviewForm ? (
+                                <button
+                                    onClick={() => setShowReviewForm(true)}
+                                    className="flex items-center gap-2 px-5 py-3 border-2 border-dashed border-amber-500/50 text-amber-400 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-amber-500/10 transition-colors"
+                                >
+                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                    {myItemReview ? 'Puanını Düzenle' : 'Bu Ürünü Değerlendir'}
+                                </button>
+                            ) : (
+                                <form onSubmit={handleSubmitReview} className="bg-white/10 border border-white/10 backdrop-blur-md rounded-2xl p-5 space-y-3">
+                                    <p className="text-xs font-black uppercase tracking-widest text-stone-300">
+                                        {myItemReview ? 'Puanını Güncelle' : 'Değerlendirme Yap'}
+                                    </p>
+                                    <StarPicker value={reviewScore} onChange={setReviewScore} />
+                                    <textarea
+                                        value={reviewComment}
+                                        onChange={(e) => setReviewComment(e.target.value)}
+                                        placeholder="Yorum ekle (isteğe bağlı)…"
+                                        rows={2}
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-stone-500 font-medium focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
+                                    />
+                                    {reviewErr && <p className="text-red-400 text-xs font-medium">{reviewErr}</p>}
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="submit"
+                                            disabled={savingReview || !reviewScore}
+                                            className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-stone-900 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-amber-400 transition-colors disabled:opacity-50"
+                                        >
+                                            <Send className="w-3.5 h-3.5" />
+                                            {myItemReview ? 'Güncelle' : 'Gönder'}
+                                        </button>
+                                        <button type="button" onClick={() => setShowReviewForm(false)} className="px-4 py-2 text-stone-400 text-xs font-black uppercase tracking-widest hover:text-white transition-colors">
+                                            İptal
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Kendi verilen puan */}
+                    {myItemReview && !showReviewForm && (
+                        <div className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-6 relative z-10">
+                            <div className="w-8 h-8 rounded-full bg-amber-500 text-stone-900 flex items-center justify-center text-xs font-black shrink-0">
+                                {user?.profile?.firstName?.[0] || 'S'}
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-black text-amber-400 uppercase tracking-widest">Sizin Puanınız</span>
+                                    <StarDisplay value={myItemReview.score} />
+                                </div>
+                                {myItemReview.comment && <p className="text-sm text-stone-300 mt-1 leading-relaxed">{myItemReview.comment}</p>}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Review listesi */}
+                    <div className="space-y-4 relative z-10">
+                        {itemReviews.length === 0 ? (
+                            <p className="text-stone-500 text-sm font-serif italic text-center py-6">Henüz değerlendirme yapılmamış.</p>
+                        ) : (
+                            <>
+                                {(reviewsExpanded ? itemReviews : itemReviews.slice(0, 3)).map((r) => {
+                                    const authorName = `${r.author.firstName || ''} ${r.author.lastName || ''}`.trim() || 'Kullanıcı';
+                                    const dateStr = new Date(r.createdAt).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+                                    return (
+                                        <div key={r.id} className="flex items-start gap-3 py-3 border-b border-white/5 last:border-0">
+                                            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/10 shrink-0 flex items-center justify-center text-xs font-black text-white">
+                                                {r.author.avatarUrl
+                                                    ? <img src={getFullImageUrl(r.author.avatarUrl)} alt={authorName} className="w-full h-full object-cover" />
+                                                    : authorName[0]?.toUpperCase()}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-xs font-black text-stone-300">{authorName}</span>
+                                                    <StarDisplay value={r.score} />
+                                                    <span className="text-[10px] text-stone-500">{dateStr}</span>
+                                                </div>
+                                                {r.comment && <p className="text-sm text-stone-400 mt-1 leading-relaxed italic">{r.comment}</p>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                {itemReviews.length > 3 && (
+                                    <button
+                                        onClick={() => setReviewsExpanded(!reviewsExpanded)}
+                                        className="flex items-center gap-1.5 text-xs font-black text-stone-500 uppercase tracking-widest hover:text-amber-400 transition-colors mt-2"
+                                    >
+                                        {reviewsExpanded ? <><ChevronUp className="w-3.5 h-3.5" /> Gizle</> : <><ChevronDown className="w-3.5 h-3.5" /> Tümünü Gör ({itemReviews.length})</>}
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
