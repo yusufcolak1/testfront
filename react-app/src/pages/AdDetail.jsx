@@ -16,6 +16,7 @@ export default function AdDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [acting, setActing] = useState(false);
+    const [canChat, setCanChat] = useState(null); // null=yükleniyor, true/false
     
     // Soru-Cevap state'leri
     const [questions, setQuestions] = useState([]);
@@ -32,31 +33,52 @@ export default function AdDetail() {
         setLoading(true); setError(null);
         (async () => {
             try {
-                const r = await api.getItemById(id);
+                // İlan detay, soru ve yorum isteklerini paralel başlatıyoruz
+                const [r, qRes, cRes] = await Promise.all([
+                    api.getItemById(id),
+                    api.getItemQuestions(id),
+                    api.getItemComments(id)
+                ]);
+
                 if (cancelled) return;
+
                 const it = r.data?.item || r.data;
                 setItem(it);
                 setIsFavorited(!!it.isFavorited);
+                setQuestions(qRes.data || []);
+                setComments(cRes.data?.comments || []);
 
-                // Soruları getir
-                const qRes = await api.getItemQuestions(id);
-                if (!cancelled) setQuestions(qRes.data || []);
-
-                // Yorumları getir
-                const cRes = await api.getItemComments(id);
-                if (!cancelled) setComments(cRes.data?.comments || []);
-
-                // Benzer ilanlar
+                // Benzer ilanlar (Kategori id'si geldikten sonra tetiklenir)
                 if (it.category?.id) {
                     const sim = await api.getItems({ categoryId: it.category.id, limit: 8 });
-                    if (cancelled) return;
-                    setSimilar((sim.data?.items || sim.data || []).filter((x) => x.id !== it.id).slice(0, 4));
+                    if (!cancelled) {
+                        setSimilar((sim.data?.items || sim.data || []).filter((x) => x.id !== it.id).slice(0, 4));
+                    }
                 }
+
             } catch (e) { if (!cancelled) setError(e.message); }
             finally { if (!cancelled) setLoading(false); }
         })();
         return () => { cancelled = true; };
     }, [id]);
+
+    // Takas/mesaj hakkı kontrolü (kendi ilanı değilse) - Auth durumu değiştiğinde yeniden tetiklenmesi için ayrı useEffect
+    useEffect(() => {
+        let cancelled = false;
+        if (isAuthenticated && item?.user?.id && item.user.id !== user?.id) {
+            (async () => {
+                try {
+                    const cc = await api.canChatWith(item.user.id, item.id);
+                    if (!cancelled) setCanChat(!!cc.data?.canChat);
+                } catch { 
+                    if (!cancelled) setCanChat(false); 
+                }
+            })();
+        } else {
+            setCanChat(false);
+        }
+        return () => { cancelled = true; };
+    }, [isAuthenticated, user?.id, item?.user?.id, item?.id]);
 
     const requireAuth = () => {
         if (!isAuthenticated) { openLoginModal(); return false; }
@@ -78,7 +100,7 @@ export default function AdDetail() {
         if (item.user.id === user?.id) { alert('Kendi ilanınıza mesaj gönderemezsiniz.'); return; }
         try {
             setActing(true);
-            const r = await api.startConversation(item.user.id);
+            const r = await api.startConversation(item.user.id, item.id);
             navigate(`/mesajlar?room=${r.data.id}`);
         } catch (e) { alert(e.message); }
         finally { setActing(false); }
@@ -190,15 +212,28 @@ export default function AdDetail() {
                                     </div>
                                 )}
                                 {item.estimatedValue && (
-                                    <div className="text-[10px] md:text-xs font-black text-stone-500 uppercase tracking-widest">
-                                        Tahmini değer: <span className="text-[#4a2008] text-base font-serif italic">{item.estimatedValue} ₺</span>
+                                    <div>
+                                        <div className="text-[10px] md:text-xs font-black text-stone-500 uppercase tracking-widest">
+                                            Tahmini değer: <span className="text-[#4a2008] text-base font-serif italic">{item.estimatedValue} ₺</span>
+                                        </div>
+                                        <p className="mt-1 text-[9px] md:text-[10px] text-stone-400 italic">
+                                            Bu değer ilan sahibi tarafından belirlenmiştir; platform bağımsız bir fiyat tespiti yapmamaktadır.
+                                        </p>
                                     </div>
                                 )}
                             </div>
 
                             <div className="pt-6 border-t border-stone-50 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-stone-900 flex items-center justify-center text-white font-black italic shadow-xl">{ownerInitials}</div>
+                                    {item.user?.profile?.avatarUrl ? (
+                                        <img 
+                                            src={getFullImageUrl(item.user.profile.avatarUrl)} 
+                                            alt={ownerName} 
+                                            className="w-12 h-12 rounded-2xl object-cover shadow-xl"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 rounded-2xl bg-stone-900 flex items-center justify-center text-white font-black italic shadow-xl">{ownerInitials}</div>
+                                    )}
                                     <div>
                                         <div className="text-sm font-black text-stone-900 flex items-center gap-1.5">
                                             {ownerName}
@@ -215,9 +250,21 @@ export default function AdDetail() {
                                 <button onClick={goOffer} disabled={acting} className="bg-stone-900 text-white py-4 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-[9px] md:text-[10px] tracking-widest uppercase hover:bg-black transition-all shadow-xl flex items-center justify-center gap-2">
                                     <Zap className="w-4 h-4 text-amber-400" /> TEKLİF VER
                                 </button>
-                                <button onClick={startMessage} disabled={acting} className="flex items-center justify-center gap-2 border-2 border-stone-100 py-4 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-[9px] md:text-[10px] tracking-widest text-stone-600 uppercase hover:bg-stone-50 transition-all">
-                                    <MessageCircle className="w-4 h-4" /> MESAJ GÖNDER
-                                </button>
+
+                                {canChat ? (
+                                    <button onClick={startMessage} disabled={acting} className="flex items-center justify-center gap-2 border-2 border-stone-100 py-4 md:py-5 rounded-xl md:rounded-[1.5rem] font-black text-[9px] md:text-[10px] tracking-widest text-stone-600 uppercase hover:bg-stone-50 transition-all">
+                                        <MessageCircle className="w-4 h-4" /> MESAJ GÖNDER
+                                    </button>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-stone-200 py-3 md:py-4 rounded-xl md:rounded-[1.5rem] text-center px-2">
+                                        <span className="text-[8px] md:text-[9px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-1">
+                                            <MessageCircle className="w-3 h-3" /> MESAJ GÖNDER
+                                        </span>
+                                        <span className="text-[8px] text-stone-400 italic leading-tight">
+                                            Önce takas teklifi gönderin
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -288,9 +335,17 @@ export default function AdDetail() {
                             questions.map((q) => (
                                 <div key={q.id} className="space-y-4">
                                     <div className="flex gap-4 items-start">
-                                        <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-400 font-black text-xs shrink-0">
-                                            {q.user?.profile?.firstName?.[0] || 'K'}
-                                        </div>
+                                        {q.user?.profile?.avatarUrl ? (
+                                            <img 
+                                                src={getFullImageUrl(q.user.profile.avatarUrl)} 
+                                                alt={q.user.profile.firstName} 
+                                                className="w-10 h-10 rounded-xl object-cover shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center text-stone-400 font-black text-xs shrink-0">
+                                                {q.user?.profile?.firstName?.[0] || 'K'}
+                                            </div>
+                                        )}
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="text-sm font-black text-stone-900">{q.user?.profile?.firstName}</span>
@@ -399,7 +454,20 @@ export default function AdDetail() {
                             comments.map((c) => (
                                 <div key={c.id} className="animate-in slide-in-from-bottom-2 duration-300">
                                     <div className="flex items-center justify-between mb-2 px-1">
-                                        <span className="text-amber-500 font-black text-[9px] tracking-widest uppercase">@{c.user?.profile?.firstName?.toLowerCase() || 'kullanici'}</span>
+                                        <div className="flex items-center gap-2">
+                                            {c.user?.profile?.avatarUrl ? (
+                                                <img 
+                                                    src={getFullImageUrl(c.user.profile.avatarUrl)} 
+                                                    alt={c.user?.profile?.firstName} 
+                                                    className="w-5 h-5 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white font-bold text-[8px] uppercase">
+                                                    {(c.user?.profile?.firstName?.[0] || 'K')}
+                                                </div>
+                                            )}
+                                            <span className="text-amber-500 font-black text-[9px] tracking-widest uppercase">@{c.user?.profile?.firstName?.toLowerCase() || 'kullanici'}</span>
+                                        </div>
                                         <span className="text-[9px] text-stone-600 font-medium italic font-serif">{new Date(c.createdAt).toLocaleDateString('tr-TR')}</span>
                                     </div>
                                     <p className="text-stone-300 text-sm font-serif italic leading-relaxed bg-white/5 p-4 rounded-2xl border border-white/5">

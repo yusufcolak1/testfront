@@ -1,5 +1,5 @@
 // ============================================
-// TAKASON - Prisma Schema (SQLite - dev)
+// TAKASON - Prisma Schema (PostgreSQL - Supabase)
 // ============================================
 
 generator client {
@@ -9,8 +9,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -149,6 +150,10 @@ model Item {
   @@index([userId])
   @@index([categoryId])
   @@index([status])
+  @@index([createdAt])
+  @@index([estimatedValue])
+  @@index([isFeatured])
+  @@index([isPopular])
   @@map("items")
 }
 
@@ -180,6 +185,7 @@ model ItemQuestion {
 
   @@index([itemId])
   @@index([userId])
+  @@index([itemId, createdAt])
   @@map("item_questions")
 }
 
@@ -404,6 +410,7 @@ model UserInteraction {
 
   @@index([userId])
   @@index([itemId])
+  @@index([userId, createdAt])
   @@map("user_interactions")
 }
 
@@ -424,6 +431,7 @@ model Comment {
 
   @@index([itemId])
   @@index([userId])
+  @@index([itemId, createdAt])
   @@map("comments")
 }
 

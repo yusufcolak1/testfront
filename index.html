@@ -154,11 +154,8 @@
 </head>
 <body class="min-h-screen relative" style="overflow-x: hidden;">
 
-    <div id="canvas-container" class="fixed inset-0 z-0" style="pointer-events: none;"></div>
-
-
-    <!-- UI Container (Hidden initially for Intro Sequence) -->
-    <div id="ui-container" style="position:fixed; top:110vh; left:0; width:100%; opacity:0; pointer-events:none; z-index:10; overflow:hidden;">
+    <!-- UI Container -->
+    <div id="ui-container" class="w-full relative z-10">
 
     <!-- HEADER -->
     <header class="container mx-auto px-6 py-4 flex items-center justify-between header-rough-border mb-16 rounded-xl bg-stone-bg/80 backdrop-blur-sm shadow-clay-sm">
@@ -193,7 +190,7 @@
     <main class="container mx-auto px-6 flex flex-col items-center mb-24">
         
         <div class="text-center mb-10">
-            <h2 id="ui-static-slogan" class="text-5xl md:text-6xl font-serif text-stone-text mb-4 leading-tight opacity-0">Her Eşya İkinci Bir Şansı<br>Hak Eder</h2>
+            <h2 id="ui-static-slogan" class="text-5xl md:text-6xl font-serif text-stone-text mb-4 leading-tight">Her Eşya İkinci Bir Şansı<br>Hak Eder</h2>
             <p class="text-lg md:text-xl italic font-serif text-stone-muted">Eşyalarını takasla, değerini koru.</p>
         </div>
 
@@ -358,7 +355,6 @@
         lucide.createIcons();
     </script>
 
-    <!-- 3D Engine & Sequence Logic -->
-    <script type="module" src="main.js?v=48"></script>
+
 </body>
 </html>

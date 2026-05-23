@@ -1,0 +1,196 @@
+// ============================================
+// TAKASON - Prisma Schema (SQLite - geçici göç için)
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated-sqlite-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("SQLITE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("USER")
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  profile        Profile?
+  items          Item[]
+  sentTrades     Trade[]   @relation("SentTrades")
+  receivedTrades Trade[]   @relation("ReceivedTrades")
+  favorites      Favorite[]
+  sentMessages   Message[]
+  rooms1         MessageRoom[] @relation("Room_User1")
+  rooms2         MessageRoom[] @relation("Room_User2")
+  notifications  Notification[]
+  addresses      Address[]
+  interactions   Interaction[]
+}
+
+model Profile {
+  id             String    @id @default(uuid())
+  userId         String    @unique @map("user_id")
+  firstName      String    @map("first_name")
+  lastName       String    @map("last_name")
+  avatarUrl      String?   @map("avatar_url")
+  bio            String?
+  city           String?
+  phone          String?
+  isPremium      Boolean   @default(false) @map("is_premium")
+  premiumUntil   DateTime? @map("premium_until")
+  score          Int       @default(0)
+  rating         Float     @default(0)
+  swapsCompleted Int       @default(0) @map("swaps_completed")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  icon        String?
+  description String?
+  parentId    String?    @map("parent_id")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  parent      Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children    Category[] @relation("SubCategories")
+  items       Item[]
+}
+
+model Item {
+  id             String      @id @default(uuid())
+  userId         String      @map("user_id")
+  categoryId     String      @map("category_id")
+  title          String
+  description    String?
+  condition      String      @default("GOOD")
+  estimatedValue Float?      @map("estimated_value")
+  location       String?
+  status         String      @default("ACTIVE")
+  isFeatured     Boolean     @default(false) @map("is_featured")
+  isPopular      Boolean     @default(false) @map("is_popular")
+  viewCount      Int         @default(0) @map("view_count")
+  qualityScore   Float       @default(0) @map("quality_score")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       Category    @relation(fields: [categoryId], references: [id])
+  images         ItemImage[]
+  favorites      Favorite[]
+  tradeItems     TradeItem[]
+  interactions   Interaction[]
+}
+
+model ItemImage {
+  id           String   @id @default(uuid())
+  itemId       String   @map("item_id")
+  imageUrl     String   @map("image_url")
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model Trade {
+  id         String      @id @default(uuid())
+  senderId   String      @map("sender_id")
+  receiverId String      @map("receiver_id")
+  status     String      @default("PENDING")
+  message    String?
+  createdAt  DateTime    @default(now()) @map("created_at")
+  updatedAt  DateTime    @updatedAt @map("updated_at")
+  sender     User        @relation("SentTrades", fields: [senderId], references: [id])
+  receiver   User        @relation("ReceivedTrades", fields: [receiverId], references: [id])
+  tradeItems TradeItem[]
+}
+
+model TradeItem {
+  id      String @id @default(uuid())
+  tradeId String @map("trade_id")
+  itemId  String @map("item_id")
+  side    String
+  trade   Trade  @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  item    Item   @relation(fields: [itemId], references: [id])
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  itemId    String   @map("item_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  @@unique([userId, itemId])
+}
+
+model MessageRoom {
+  id        String    @id @default(uuid())
+  user1Id   String    @map("user1_id")
+  user2Id   String    @map("user2_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  user1     User      @relation("Room_User1", fields: [user1Id], references: [id])
+  user2     User      @relation("Room_User2", fields: [user2Id], references: [id])
+  messages  Message[]
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  roomId    String      @map("room_id")
+  senderId  String      @map("sender_id")
+  content   String
+  isRead    Boolean     @default(false) @map("is_read")
+  createdAt DateTime    @default(now()) @map("created_at")
+  room      MessageRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    User        @relation(fields: [senderId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String
+  title     String
+  body      String?
+  isRead    Boolean  @default(false) @map("is_read")
+  data      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  address   String
+  city      String
+  type      String   @default("HOME")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Interaction {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  itemId    String   @map("item_id")
+  type      String
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+}

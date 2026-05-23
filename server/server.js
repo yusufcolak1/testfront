@@ -45,8 +45,8 @@ app.set('io', io);
 // ============================================================
 const startServer = async () => {
   try {
-    // PostgreSQL bağlantısı database.js'de otomatik yapılıyor
-    console.log('✅ PostgreSQL veritabanına bağlanıldı.');
+    await prisma.$queryRaw`SELECT 1`;
+    console.log('✅ Supabase (PostgreSQL) veritabanına bağlanıldı.');
 
     // Sunucuyu dinlemeye başla
     httpServer.listen(PORT, () => {

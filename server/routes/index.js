@@ -13,15 +13,32 @@ const contentRoutes = require('./contentRoutes');
 const userRoutes = require('./userRoutes');
 const adminRoutes = require('./adminRoutes');
 const supportRoutes = require('./supportRoutes');
+const { prisma } = require('../config/database');
 
-router.get('/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Takason API çalışıyor 🚀',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    version: '1.0.0',
-  });
+router.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      success: true,
+      message: 'Takason API çalışıyor 🚀',
+      database: 'connected',
+      provider: 'postgresql',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      version: '1.0.0',
+    });
+  } catch (err) {
+    console.error('Health check DB error:', err.message);
+    res.status(503).json({
+      success: false,
+      message: 'API ayakta ancak veritabanına bağlanılamıyor.',
+      database: 'disconnected',
+      provider: 'postgresql',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      version: '1.0.0',
+    });
+  }
 });
 
 // Auth & core

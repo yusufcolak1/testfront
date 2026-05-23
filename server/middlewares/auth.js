@@ -9,11 +9,29 @@ const { prisma } = require('../config/database');
 const { AppError, asyncHandler } = require('./errorHandler');
 
 // ============================================================
+// Kullanıcı önbelleği — Her istekte DB'ye gitmemek için (TTL: 60sn)
+// Supabase'e olan network round-trip maliyetini büyük ölçüde azaltır
+// ============================================================
+const userCache = new Map();
+const USER_CACHE_TTL = 60 * 1000; // 60 saniye
+
+function getCachedUser(userId) {
+  const cached = userCache.get(userId);
+  if (!cached) return null;
+  if (Date.now() - cached.ts > USER_CACHE_TTL) { userCache.delete(userId); return null; }
+  return cached.user;
+}
+function setCachedUser(userId, user) {
+  if (userCache.size > 1000) userCache.clear(); // Bellek sınırı
+  userCache.set(userId, { user, ts: Date.now() });
+}
+function invalidateUserCache(userId) { userCache.delete(userId); }
+
+// ============================================================
 // authenticate - Token doğrulama (zorunlu)
 // Kullanım: router.get('/protected', authenticate, controller)
 // ============================================================
 const authenticate = asyncHandler(async (req, res, next) => {
-  // Token'ı Authorization header'ından al: "Bearer <token>"
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -22,35 +40,32 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
-  // Token'ı doğrula
   let decoded;
   try {
     decoded = jwt.verify(token, jwtConfig.accessToken.secret);
   } catch (err) {
-    // JWT hataları errorHandler'da yakalanır (JsonWebTokenError, TokenExpiredError)
     throw err;
   }
 
-  // Kullanıcı hâlâ aktif mi? (Banlı olabilir)
-  const user = await prisma.user.findUnique({
-    where: { id: decoded.userId },
-    select: {
-      id: true,
-      email: true,
-      role: true,
-      status: true,
-    },
-  });
+  // Önce önbellekten bak — Supabase'e gitmeden yanıt ver
+  let user = getCachedUser(decoded.userId);
 
   if (!user) {
-    throw new AppError('Bu token\'a ait kullanıcı bulunamadı.', 401);
+    // Cache miss: DB'den çek ve önbelleğe al
+    user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, email: true, role: true, status: true },
+    });
+
+    if (!user) throw new AppError('Bu token\'a ait kullanıcı bulunamadı.', 401);
+    setCachedUser(decoded.userId, user);
   }
 
   if (user.status === 'BANNED' || user.status === 'SUSPENDED') {
+    invalidateUserCache(decoded.userId);
     throw new AppError('Hesabınız askıya alınmış. Destek ekibiyle iletişime geçin.', 403);
   }
 
-  // Kullanıcı bilgisini sonraki middleware'e ilet
   req.user = user;
   next();
 });
@@ -71,10 +86,15 @@ const optionalAuthenticate = asyncHandler(async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, jwtConfig.accessToken.secret);
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
-      select: { id: true, email: true, role: true, status: true },
-    });
+    // Önce önbellekten bak
+    let user = getCachedUser(decoded.userId);
+    if (!user) {
+      user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { id: true, email: true, role: true, status: true },
+      });
+      if (user && user.status === 'ACTIVE') setCachedUser(decoded.userId, user);
+    }
 
     req.user = user && user.status === 'ACTIVE' ? user : null;
   } catch {
@@ -102,4 +122,4 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { authenticate, optionalAuthenticate, authorize };
+module.exports = { authenticate, optionalAuthenticate, authorize, invalidateUserCache };

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Star, ShieldCheck, Zap, Rocket, Check, ArrowRight, Sparkles, CheckCircle2, Flame, Gem, Shield, Crown } from 'lucide-react';
 import api from '../lib/api';
+import { useSettings } from '../contexts/SettingsContext';
 
 const iconMap = { Zap, Rocket, ShieldCheck, Star, Sparkles, Shield, Crown };
 const renderIcon = (name) => {
@@ -9,6 +10,7 @@ const renderIcon = (name) => {
 };
 
 export default function Premium() {
+    const { isPremiumEnabled, loading: settingsLoading } = useSettings();
     const [features, setFeatures] = useState([]);
     const [plans, setPlans] = useState([]);
 
@@ -28,6 +30,41 @@ export default function Premium() {
         })();
         return () => { cancelled = true; };
     }, []);
+
+    if (settingsLoading) {
+        return (
+            <div className="min-h-screen bg-[#f5f1ed] flex items-center justify-center text-stone-400">
+                Yükleniyor…
+            </div>
+        );
+    }
+
+    if (!isPremiumEnabled) {
+        return (
+            <div className="min-h-screen bg-[#f5f1ed] flex items-center justify-center p-4">
+                <div className="max-w-xl w-full bg-stone-900 text-white rounded-[2.5rem] p-8 md:p-12 text-center shadow-2xl relative overflow-hidden border border-stone-800">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#4a2008]/20 blur-[100px] rounded-full translate-y-1/2 -translate-x-1/2"></div>
+                    
+                    <div className="relative z-10 flex flex-col items-center">
+                        <div className="w-16 h-16 rounded-[1.5rem] bg-stone-850 border border-stone-750 flex items-center justify-center mb-6 animate-pulse shadow-xl">
+                            <Crown className="w-8 h-8 text-amber-400" />
+                        </div>
+                        <h2 className="text-3xl md:text-5xl font-serif font-black tracking-tight text-white mb-4 italic">
+                            Çok Yakında
+                        </h2>
+                        <div className="h-0.5 w-16 bg-amber-400/40 rounded-full mb-6"></div>
+                        <p className="text-lg md:text-xl font-serif italic text-stone-350 leading-relaxed max-w-md">
+                            Premium Avantajları Sizlerle!
+                        </p>
+                        <p className="text-[10px] md:text-xs text-stone-500 font-sans tracking-widest uppercase mt-8 font-black">
+                            TAKASON ELITE AYRICALIKLARI
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const monthly = plans.find((pl) => pl.period === 'MONTHLY') || { price: 49.99, features: [] };
 

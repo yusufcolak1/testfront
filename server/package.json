@@ -10,7 +10,8 @@
     "prisma:push": "npx prisma db push",
     "prisma:studio": "npx prisma studio",
     "prisma:generate": "npx prisma generate",
-    "prisma:seed": "node prisma/seed.js"
+    "prisma:seed": "node prisma/seed.js",
+    "restore:cms": "node scripts/restore-cms-from-sqlite.js"
   },
   "keywords": [
     "takas",

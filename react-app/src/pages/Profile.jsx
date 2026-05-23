@@ -3,6 +3,7 @@ import { User, Settings, Package, Heart, LogOut, Shield, Award, Calendar, Chevro
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
+import { getFullImageUrl } from '../utils/helpers';
 
 export default function Profile() {
     const { user, isAuthenticated, logout } = useAuth();
@@ -65,10 +66,18 @@ export default function Profile() {
                 <div className="container mx-auto max-w-4xl relative z-10">
                     <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
                         <div className="relative shrink-0 mt-4 md:mt-0">
-                            <div className={`w-16 h-16 md:w-32 md:h-32 rounded-full border-[3px] md:border-4 ${isPremium ? 'border-stone-800' : 'border-[#7a6550]'} p-0.5 md:p-1 bg-black/20 shadow-2xl`}>
-                                <div className={`w-full h-full rounded-full ${isPremium ? 'bg-stone-800' : 'bg-[#7a6550]'} flex items-center justify-center text-xl md:text-4xl font-black text-amber-500`}>
-                                    {firstName[0]?.toUpperCase()}
-                                </div>
+                            <div className={`w-16 h-16 md:w-32 md:h-32 rounded-full border-[3px] md:border-4 ${isPremium ? 'border-stone-800' : 'border-[#7a6550]'} p-0.5 md:p-1 bg-black/20 shadow-2xl overflow-hidden flex items-center justify-center`}>
+                                {user.profile?.avatarUrl ? (
+                                    <img 
+                                        src={getFullImageUrl(user.profile.avatarUrl)} 
+                                        alt={firstName} 
+                                        className="w-full h-full object-cover rounded-full"
+                                    />
+                                ) : (
+                                    <div className={`w-full h-full rounded-full ${isPremium ? 'bg-stone-800' : 'bg-[#7a6550]'} flex items-center justify-center text-xl md:text-4xl font-black text-amber-500`}>
+                                        {firstName[0]?.toUpperCase()}
+                                    </div>
+                                )}
                             </div>
                             {isPremium && (
                                 <div className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-amber-500 text-stone-900 p-1 md:p-2 rounded-full shadow-lg border-2 border-stone-900">

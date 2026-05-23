@@ -2,7 +2,7 @@
 // TAKASON - Prisma Seed (Tüm dinamik içerik)
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../prisma/generated-client');
 const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
@@ -70,6 +70,66 @@ const categories = [
       { name: 'Koleksiyon', slug: 'koleksiyon' },
     ],
   },
+  {
+    name: 'Oyuncak & Hobi', slug: 'oyuncak-hobi', icon: 'Boxes',
+    children: [
+      { name: 'Eğitici Oyuncaklar', slug: 'egitici-oyuncaklar' },
+      { name: 'Figür & Karakter', slug: 'figur-karakter' },
+      { name: 'Kutu Oyunları', slug: 'kutu-oyunlari' },
+      { name: 'Uzaktan Kumandalı', slug: 'uzaktan-kumandali' },
+      { name: 'Model & Maket', slug: 'model-maket' },
+    ],
+  },
+  {
+    name: 'Bebek & Anne', slug: 'bebek-anne', icon: 'Baby',
+    children: [
+      { name: 'Bebek Arabası & Puset', slug: 'bebek-arabasi-puset' },
+      { name: 'Bebek Giyim & Tekstil', slug: 'bebek-giyim-tekstil' },
+      { name: 'Mama Sandalyesi', slug: 'mama-sandalyesi' },
+      { name: 'Bebek Oyuncakları', slug: 'bebek-oyuncaklari' },
+    ],
+  },
+  {
+    name: 'Ev & Yaşam', slug: 'ev-yasam', icon: 'Home',
+    children: [
+      { name: 'Ev Dekoru', slug: 'ev-dekoru' },
+      { name: 'Aydınlatma', slug: 'aydinlatma' },
+      { name: 'Mutfak Gereçleri', slug: 'mutfak-gerecleri' },
+      { name: 'Banyo Aksesuarları', slug: 'banyo-aksesuarlari' },
+    ],
+  },
+  {
+    name: 'Otomotiv & Yedek Parça', slug: 'otomotiv', icon: 'Car',
+    children: [
+      { name: 'Oto Aksesuar', slug: 'oto-aksesuar' },
+      { name: 'Motosiklet Ekipmanları', slug: 'motosiklet-ekipmanlari' },
+      { name: 'Jant & Lastik', slug: 'jant-lastik' },
+    ],
+  },
+  {
+    name: 'Kozmetik & Kişisel Bakım', slug: 'kozmetik', icon: 'Sparkles',
+    children: [
+      { name: 'Parfüm & Deodorant', slug: 'parfum-deodorant' },
+      { name: 'Cilt Bakım Cihazları', slug: 'cilt-bakim-cihazlari' },
+      { name: 'Saç Bakım & Şekillendirme', slug: 'sac-bakim' },
+    ],
+  },
+  {
+    name: 'Hobi & Sanat', slug: 'hobi-sanat', icon: 'Palette',
+    children: [
+      { name: 'Resim & Çizim Malzemeleri', slug: 'resim-cizim-malzemeleri' },
+      { name: 'El İşi & Örgü', slug: 'el-isi-orgu' },
+      { name: 'Koleksiyon Ürünleri', slug: 'koleksiyon-urunleri' },
+    ],
+  },
+  {
+    name: 'Ofis & Kırtasiye', slug: 'ofis-kirtasiye', icon: 'Briefcase',
+    children: [
+      { name: 'Ofis Mobilyaları', slug: 'ofis-mobilyalari' },
+      { name: 'Yazıcı & Tarayıcı', slug: 'yazici-tarayici' },
+      { name: 'Kırtasiye Malzemeleri', slug: 'kirtasiye-malzemeleri' },
+    ],
+  },
   { name: 'Oyun & Konsol Diğer', slug: 'oyun-konsol-diger', icon: 'Gamepad2' },
   { name: 'Diğer', slug: 'diger', icon: 'Box' },
 ];
@@ -102,7 +162,7 @@ const items = [
   { title: 'Gaming Laptop ASUS ROG', categorySlug: 'bilgisayar-laptop', userEmail: 'can@takason.com', condition: 'LIKE_NEW', estimatedValue: 42000, location: 'Eskişehir', swapFor: 'MacBook Pro M2', tag: 'FEATURED', isFeatured: true, image: 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?auto=format&fit=crop&q=80&w=800', desc: 'RTX 3070, 32GB RAM, 1TB SSD. Kutusu mevcut.' },
   { title: 'Klasik Saat Koleksiyonu', categorySlug: 'saat', userEmail: 'hasan@takason.com', condition: 'GOOD', estimatedValue: 12000, location: 'İstanbul', swapFor: 'Modern akıllı saat seti', isPopular: true, image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&q=80&w=800', desc: '5 adet vintage mekanik saat. Hepsi çalışır durumda.' },
   { title: 'Kamp Seti (Full)', categorySlug: 'kamp-outdoor', userEmail: 'can@takason.com', condition: 'GOOD', estimatedValue: 3500, location: 'Eskişehir', swapFor: 'Bisiklet veya fotoğraf makinesi', image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&w=800', desc: '3 kişilik çadır, 2 uyku tulumu, kamp ocağı.' },
-  { title: 'Espresso Makinesi De\'Longhi', categorySlug: 'mutfak', userEmail: 'selin@takason.com', condition: 'LIKE_NEW', estimatedValue: 5500, location: 'İzmir', swapFor: 'Robot süpürge', image: 'https://images.unsplash.com/photo-1610889556528-9a770e32642f?auto=format&fit=crop&q=80&w=800', desc: 'Az kullanılmış otomatik espresso makinesi.' },
+  { title: 'Espresso Makinesi De\'Longhi', categorySlug: 'mutfak-gerecleri', userEmail: 'selin@takason.com', condition: 'LIKE_NEW', estimatedValue: 5500, location: 'İzmir', swapFor: 'Robot süpürge', image: 'https://images.unsplash.com/photo-1610889556528-9a770e32642f?auto=format&fit=crop&q=80&w=800', desc: 'Az kullanılmış otomatik espresso makinesi.' },
   { title: 'Custom Kaykay', categorySlug: 'spor-outdoor', userEmail: 'deniz@takason.com', condition: 'GOOD', estimatedValue: 1200, location: 'Adana', swapFor: 'Scooter veya paten', image: 'https://images.unsplash.com/photo-1547447134-cd3f5c716030?auto=format&fit=crop&q=80&w=800', desc: 'El yapımı tasarım, profesyonel rulmanlar.' },
   { title: 'iPad Pro 12.9" M2', categorySlug: 'telefon-tablet', userEmail: 'mehmet@takason.com', condition: 'LIKE_NEW', estimatedValue: 35000, location: 'Ankara', swapFor: 'MacBook Air M2', tag: 'FEATURED', isFeatured: true, image: 'https://images.unsplash.com/photo-1561154464-82e9adf32764?auto=format&fit=crop&q=80&w=800', desc: 'Apple Pencil 2 ile birlikte, kutusu mevcut.' },
   { title: 'DJI Mini 3 Drone', categorySlug: 'fotograf-kamera', userEmail: 'burak@takason.com', condition: 'NEW', estimatedValue: 22000, location: 'Antalya', swapFor: 'Aksiyon kamerası seti', tag: 'NEW', image: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?auto=format&fit=crop&q=80&w=800', desc: 'Sıfır, kapalı kutu. 4K kamera, 3 batarya.' },
@@ -118,6 +178,9 @@ const items = [
   { title: 'Designer Çanta', categorySlug: 'canta-cuzdan', userEmail: 'ayse@takason.com', condition: 'LIKE_NEW', estimatedValue: 8500, location: 'İstanbul', swapFor: 'Designer ayakkabı', image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=800', desc: 'Premium marka çanta, kutu ve tüm aksesuarlar.' },
   { title: 'Polaroid Vintage Fotoğraf Makinesi', categorySlug: 'fotograf-kamera', userEmail: 'hasan@takason.com', condition: 'GOOD', estimatedValue: 2500, location: 'İstanbul', swapFor: 'Modern fotoğraf makinesi', image: 'https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?auto=format&fit=crop&q=80&w=800', desc: 'Çalışır durumda, 80\'ler model.' },
   { title: 'Çocuk Kitap Seti', categorySlug: 'cocuk-kitap', userEmail: 'selin@takason.com', condition: 'GOOD', estimatedValue: 600, location: 'İzmir', swapFor: 'Eğitici oyuncak', image: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800', desc: '20 adet 6-10 yaş çocuk kitabı.' },
+  { title: 'LEGO Star Wars Millennium Falcon', categorySlug: 'kutu-oyunlari', userEmail: 'mehmet@takason.com', condition: 'NEW', estimatedValue: 3500, location: 'Ankara', swapFor: 'PlayStation 4 oyunları veya kutu oyunu', tag: 'POPULAR', isPopular: true, image: 'https://images.unsplash.com/photo-1585366119957-e57b93602f77?auto=format&fit=crop&q=80&w=800', desc: 'Orijinal kapalı kutu LEGO Star Wars Millennium Falcon seti.' },
+  { title: 'Bebek Arabası Chicco Trio', categorySlug: 'bebek-arabasi-puset', userEmail: 'selin@takason.com', condition: 'GOOD', estimatedValue: 7500, location: 'İzmir', swapFor: 'Akıllı saat veya tablet', tag: 'NEW', image: 'https://images.unsplash.com/photo-1591085686350-798c0f9affd1?auto=format&fit=crop&q=80&w=800', desc: 'Chicco marka çok temiz 3\'lü seyahat sistemi bebek arabası seti.' },
+  { title: 'Oto Kokusu & Detay Temizlik Seti', categorySlug: 'oto-aksesuar', userEmail: 'ayse@takason.com', condition: 'NEW', estimatedValue: 900, location: 'İstanbul', swapFor: 'Masaüstü aksesuarları', image: 'https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?auto=format&fit=crop&q=80&w=800', desc: 'Premium oto bakım ve detay temizlik şampuan/koku seti.' },
 ];
 
 // ------------------------------------------------------------
@@ -212,6 +275,19 @@ const siteSettings = [
   { key: 'auth.google.clientId', value: '', group: 'auth', description: 'Google Client ID' },
   { key: 'auth.facebook.appId', value: '', group: 'auth', description: 'Facebook App ID' },
   { key: 'premium.enabled', value: 'true', type: 'BOOLEAN', group: 'premium', isPublic: true, description: 'Premium üyelik modülü aktif' },
+  // Support contact modal
+  { key: 'support.contact.formTitle', value: 'Destek Formu', group: 'support', isPublic: true, description: 'Destek modalı başlığı' },
+  { key: 'support.contact.formSubtitle', value: 'TakasOn ekibi mesajına en geç 2 saat içinde yanıt verir.', type: 'TEXT', group: 'support', isPublic: true, description: 'Destek modalı açıklaması' },
+  { key: 'support.contact.namePlaceholder', value: 'Emre K.', group: 'support', isPublic: true, description: 'Ad soyad alanı placeholder metni' },
+  { key: 'support.contact.emailPlaceholder', value: 'destek@takason.com', group: 'support', isPublic: true, description: 'E-posta alanı placeholder metni' },
+  { key: 'support.contact.messagePlaceholder', value: 'Sorununuzdan detaylıca bahsetin...', type: 'TEXT', group: 'support', isPublic: true, description: 'Mesaj alanı placeholder metni' },
+  { key: 'support.contact.submitLabel', value: 'MESAJI GÖNDER', group: 'support', isPublic: true, description: 'Gönder butonu metni' },
+  { key: 'support.contact.successMessage', value: 'Mesajınız başarıyla gönderildi. En kısa sürede size döneceğiz.', type: 'TEXT', group: 'support', isPublic: true, description: 'Form gönderim başarı mesajı' },
+  { key: 'support.contact.phone', value: '+90 212 555 0000', group: 'support', isPublic: true, description: 'Destek paneli telefon bilgisi' },
+  { key: 'support.contact.email', value: 'destek@takason.com', group: 'support', isPublic: true, description: 'Destek paneli e-posta bilgisi' },
+  { key: 'support.contact.office', value: 'Beşiktaş, İstanbul Takas Binası No:4', type: 'TEXT', group: 'support', isPublic: true, description: 'Destek paneli ofis/adres bilgisi' },
+  { key: 'support.contact.backLabel', value: 'GERİ DÖN', group: 'support', isPublic: true, description: 'Modal kapatma butonu metni' },
+  { key: 'support.contact.subjects', value: JSON.stringify(['Genel Soru', 'Teknik Destek', 'Şikayet Bildirimi', 'İş Birliği']), type: 'JSON', group: 'support', isPublic: true, description: 'Destek formu konu seçenekleri' },
 ];
 
 // ------------------------------------------------------------

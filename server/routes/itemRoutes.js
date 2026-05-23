@@ -13,6 +13,9 @@ const { createItemSchema, updateItemSchema, itemQuerySchema } = require('../util
 // GET /api/items/feed — Kişiselleştirilmiş feed (korumalı, ÖNEMLİ: /:id den önce olmalı)
 router.get('/feed', authenticate, itemController.getFeed);
 
+// GET /api/items/my-monthly-count — Bu ayki ilan sayısı (korumalı, /:id den önce olmalı)
+router.get('/my-monthly-count', authenticate, itemController.getMonthlyCount);
+
 // GET /api/items - Tüm ilanlar (herkes görebilir, giriş yapmışsa favori bilgisi eklenir)
 router.get('/', optionalAuthenticate, validateQuery(itemQuerySchema), itemController.getItems);
 

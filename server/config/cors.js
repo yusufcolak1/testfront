@@ -5,12 +5,16 @@
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
-  : ['http://localhost:3000', 'http://localhost:5173'];
+  : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'];
+
+const isDevLocalhost = (origin) =>
+  process.env.NODE_ENV !== 'production' &&
+  /^http:\/\/localhost:\d+$/.test(origin);
 
 const corsOptions = {
   origin: (origin, callback) => {
     // Postman/curl gibi araçlardan gelen isteklere izin ver (origin yoksa)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || isDevLocalhost(origin)) {
       callback(null, true);
     } else {
       callback(new Error(`CORS politikası bu origin'e izin vermiyor: ${origin}`));

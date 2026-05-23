@@ -24,7 +24,10 @@ class ApiClient {
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    const headers = { ...options.headers };
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
     const token = this.getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -58,9 +61,18 @@ class ApiClient {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return this.request(endpoint + qs);
   }
-  post(endpoint, body) { return this.request(endpoint, { method: 'POST', body: JSON.stringify(body) }); }
-  put(endpoint, body) { return this.request(endpoint, { method: 'PUT', body: JSON.stringify(body) }); }
-  patch(endpoint, body) { return this.request(endpoint, { method: 'PATCH', body: JSON.stringify(body) }); }
+  post(endpoint, body) {
+    const isForm = body instanceof FormData;
+    return this.request(endpoint, { method: 'POST', body: isForm ? body : JSON.stringify(body) });
+  }
+  put(endpoint, body) {
+    const isForm = body instanceof FormData;
+    return this.request(endpoint, { method: 'PUT', body: isForm ? body : JSON.stringify(body) });
+  }
+  patch(endpoint, body) {
+    const isForm = body instanceof FormData;
+    return this.request(endpoint, { method: 'PATCH', body: isForm ? body : JSON.stringify(body) });
+  }
   delete(endpoint) { return this.request(endpoint, { method: 'DELETE' }); }
 
   // ---- Auth ----
@@ -86,6 +98,8 @@ class ApiClient {
   updateItem(id, data) { return this.patch(`/items/${id}`, data); }
   deleteItem(id) { return this.delete(`/items/${id}`); }
   toggleFavorite(id) { return this.post(`/items/${id}/favorite`); }
+  // Aylık ilan limiti
+  getMonthlyItemCount() { return this.get('/items/my-monthly-count'); }
   // Algoritma — Feed & Etkileşim
   getFeed(params = {}) { return this.get('/items/feed', params); }
   interactItem(id, type) { return this.post(`/items/${id}/interact`, { type }); }
@@ -117,6 +131,8 @@ class ApiClient {
   getPublicSettings() { return this.get('/settings/public'); }
 
   // ---- User-scoped ----
+  searchUsers(q) { return this.get('/users/search', { q }); }
+  getUserPublicProfile(id) { return this.get(`/users/${id}/public`); }
   getLeaderboard(limit = 50) { return this.get('/leaderboard', { limit }); }
   getMyAds(status) { return this.get('/users/me/ads', status ? { status } : undefined); }
   getMyTrades(status) { return this.get('/users/me/trades', status ? { status } : undefined); }
@@ -133,7 +149,14 @@ class ApiClient {
   getConversations() { return this.get('/messages'); }
   getConversation(id) { return this.get(`/messages/${id}`); }
   sendMessage(roomId, content) { return this.post(`/messages/${roomId}`, { content }); }
-  startConversation(userId) { return this.post('/messages/start', { userId }); }
+  startConversation(userId, itemId) { return this.post('/messages/start', { userId, ...(itemId ? { itemId } : {}) }); }
+  canChatWith(userId, itemId) {
+    const params = { t: Date.now() };
+    if (itemId) params.itemId = itemId;
+    return this.get(`/messages/can-chat/${userId}`, params);
+  }
+  getUnreadMessageCount() { return this.get('/messages/unread-count'); }
+  markRoomRead(roomId) { return this.patch(`/messages/${roomId}/read`); }
 
   // ---- Item upload (multipart) ----
   async createItemWithImages(formData) {

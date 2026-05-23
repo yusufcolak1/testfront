@@ -62,4 +62,30 @@ const recordInteraction = asyncHandler(async (req, res) => {
   return successResponse(res, { interaction }, 'Etkileşim kaydedildi.');
 });
 
-module.exports = { getItems, getItemById, createItem, updateItem, deleteItem, toggleFavorite, getFeed, recordInteraction };
+// GET /api/items/my-monthly-count (Korumalı) — Bu ayki ilan sayısı
+const getMonthlyCount = asyncHandler(async (req, res) => {
+  const { getMonthlyItemCount, FREE_MONTHLY_LIMIT } = itemService;
+  const settingsService = require('../services/settingsService');
+  const premiumEnabled = await settingsService.get('premium.enabled', false);
+
+  const count = await getMonthlyItemCount(req.user.id);
+
+  // Kullanıcının premium olup olmadığını kontrol et
+  const { prisma } = require('../config/database');
+  const profile = await prisma.profile.findUnique({
+    where: { userId: req.user.id },
+    select: { isPremium: true, premiumUntil: true },
+  });
+  const isPremiumUser =
+    profile?.isPremium &&
+    (profile.premiumUntil === null || new Date(profile.premiumUntil) > new Date());
+
+  return successResponse(res, {
+    count,
+    limit: premiumEnabled && !isPremiumUser ? FREE_MONTHLY_LIMIT : null,
+    isPremiumUser,
+    premiumEnabled,
+  });
+});
+
+module.exports = { getItems, getItemById, createItem, updateItem, deleteItem, toggleFavorite, getFeed, recordInteraction, getMonthlyCount };

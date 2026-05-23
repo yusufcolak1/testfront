@@ -27,53 +27,52 @@ const generateFeed = async (userId, query = {}) => {
   const limit = parseInt(query.limit || 20, 10);
   const skip  = (page - 1) * limit;
 
-  // 1. Kullanıcı bilgisi + etkileşim geçmişi
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      profile: {
-        select: {
-          city: true, latitude: true, longitude: true,
-          rating: true, swapsCompleted: true, cancellationRate: true, createdAt: true,
+  // 1 + 2. Kullanıcı bilgisi + etkileşim geçmişi — PARALEL
+  const [user, interactions] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        profile: {
+          select: {
+            city: true, latitude: true, longitude: true,
+            rating: true, swapsCompleted: true, cancellationRate: true, createdAt: true,
+          },
         },
       },
-    },
-  });
+    }),
+    prisma.userInteraction.findMany({
+      where:   { userId },
+      orderBy: { createdAt: 'desc' },
+      take:    200,
+      select: {
+        type: true,
+        weight: true,
+        item: {
+          select: { id: true, categoryId: true, tags: true, estimatedValue: true },
+        },
+      },
+    }),
+  ]);
 
   if (!user) throw new Error('Kullanıcı bulunamadı.');
-
-  // 2. Etkileşim geçmişi (son 200)
-  const interactions = await prisma.userInteraction.findMany({
-    where:   { userId },
-    orderBy: { createdAt: 'desc' },
-    take:    200,
-    select: {
-      type: true,
-      weight: true,
-      item: {
-        select: { id: true, categoryId: true, tags: true, estimatedValue: true },
-      },
-    },
-  });
 
   const interactionCount = interactions.filter(i => i.weight > 0).length;
   const isWarmUser = interactionCount >= COLD_START_THRESHOLD;
 
-  // 3. Aday havuzu oluştur (skill.md §AŞAMA 1)
+  // 3. Aday havuzu oluştur
   const candidates = await getCandidates(user, interactions);
 
   // 4. Skorlama
   const userContext = {
     profile:      user.profile || {},
     interactions: interactions,
-    currentItemValue: null, // feed modunda fairness = nötr
+    currentItemValue: null,
   };
 
   let scored;
 
   if (isWarmUser) {
-    // ─── Tam kişiselleştirme ───────────────────────────────
     const scoredPromises = candidates.map(async item => {
       const scoreRes = await scoreItem(userContext, item);
       return { ...item, _score: scoreRes.finalScore };
@@ -81,7 +80,6 @@ const generateFeed = async (userId, query = {}) => {
     scored = await Promise.all(scoredPromises);
     scored.sort((a, b) => b._score - a._score);
   } else {
-    // ─── Soğuk başlangıç: %40 popüler / %30 yakın / %30 random
     scored = coldStartMix(candidates, user.profile || {}, limit);
   }
 

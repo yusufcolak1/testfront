@@ -5,17 +5,38 @@ import api from '../../lib/api';
 
 const iconMap = { User, Zap, FileText, ShieldCheck, CreditCard, MessageCircle, Box, Activity, Crown, HelpCircle, Shield };
 
+const defaultContactSettings = {
+    'support.contact.formTitle': 'Destek Formu',
+    'support.contact.formSubtitle': 'TakasOn ekibi mesajına en geç 2 saat içinde yanıt verir.',
+    'support.contact.namePlaceholder': 'Emre K.',
+    'support.contact.emailPlaceholder': 'destek@takason.com',
+    'support.contact.messagePlaceholder': 'Sorununuzdan detaylıca bahsetin...',
+    'support.contact.submitLabel': 'MESAJI GÖNDER',
+    'support.contact.successMessage': 'Mesajınız başarıyla gönderildi. En kısa sürede size döneceğiz.',
+    'support.contact.phone': '+90 212 555 0000',
+    'support.contact.email': 'destek@takason.com',
+    'support.contact.office': 'Beşiktaş, İstanbul Takas Binası No:4',
+    'support.contact.backLabel': 'GERİ DÖN',
+    'support.contact.subjects': ['Genel Soru', 'Teknik Destek', 'Şikayet Bildirimi', 'İş Birliği'],
+};
+
 export default function HelpCenter() {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [isContactOpen, setIsContactOpen] = useState(false);
     const [categories, setCategories] = useState([]);
     const [faqs, setFaqs] = useState([]);
+    const [contactSettings, setContactSettings] = useState(defaultContactSettings);
+
+    const getContactSetting = (key) => contactSettings[key] ?? defaultContactSettings[key];
+    const subjectOptions = Array.isArray(getContactSetting('support.contact.subjects'))
+        ? getContactSetting('support.contact.subjects')
+        : defaultContactSettings['support.contact.subjects'];
 
     useEffect(() => {
         let cancelled = false;
         (async () => {
             try {
-                const [cR, fR] = await Promise.all([api.getHelpCategories(), api.getFaqs()]);
+                const [cR, fR, sR] = await Promise.all([api.getHelpCategories(), api.getFaqs(), api.getPublicSettings()]);
                 if (cancelled) return;
                 setCategories((cR.data || []).map((c) => ({
                     icon: iconMap[c.icon] || HelpCircle,
@@ -24,6 +45,7 @@ export default function HelpCenter() {
                     details: c.description,
                 })));
                 setFaqs((fR.data || []).map((f) => ({ q: f.question, a: f.answer })));
+                setContactSettings({ ...defaultContactSettings, ...(sR.data || {}) });
             } catch (e) { console.error(e); }
         })();
         return () => { cancelled = true; };
@@ -155,8 +177,8 @@ export default function HelpCenter() {
                         {/* Left: Contact Form */}
                         <div className="flex-1 p-5 md:p-16 space-y-4 md:space-y-10">
                             <div className="space-y-1 md:space-y-2">
-                                <h2 className="text-2xl md:text-4xl font-serif font-black text-stone-900 italic leading-tight">Destek <span style={{ color: '#4a2008' }}>Formu</span></h2>
-                                <p className="text-stone-400 font-medium italic text-[10px] md:text-sm font-serif">TakasOn ekibi mesajına en geç 2 saat içinde yanıt verir.</p>
+                                <h2 className="text-2xl md:text-4xl font-serif font-black text-stone-900 italic leading-tight">{getContactSetting('support.contact.formTitle')}</h2>
+                                <p className="text-stone-400 font-medium italic text-[10px] md:text-sm font-serif">{getContactSetting('support.contact.formSubtitle')}</p>
                             </div>
 
                             <form 
@@ -172,7 +194,7 @@ export default function HelpCenter() {
                                     };
                                     try {
                                         await api.sendSupportRequest(data);
-                                        alert('Mesajınız başarıyla gönderildi. En kısa sürede size döneceğiz.');
+                                        alert(getContactSetting('support.contact.successMessage'));
                                         setIsContactOpen(false);
                                     } catch (err) {
                                         alert(err.message || 'Bir hata oluştu.');
@@ -182,28 +204,25 @@ export default function HelpCenter() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
                                     <div className="space-y-1.5 md:space-y-2">
                                         <label className="text-[8px] md:text-[10px] font-black text-stone-400 uppercase tracking-widest pl-2 leading-none">AD SOYAD</label>
-                                        <input name="name" type="text" placeholder="Emre K." className="w-full bg-stone-50 border border-stone-100 px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-serif italic outline-none focus:border-[#4a2008] transition-all shadow-inner text-stone-900 text-[13px] md:text-base" required />
+                                        <input name="name" type="text" placeholder={getContactSetting('support.contact.namePlaceholder')} className="w-full bg-stone-50 border border-stone-100 px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-serif italic outline-none focus:border-[#4a2008] transition-all shadow-inner text-stone-900 text-[13px] md:text-base" required />
                                     </div>
                                     <div className="space-y-1.5 md:space-y-2">
                                         <label className="text-[8px] md:text-[10px] font-black text-stone-400 uppercase tracking-widest pl-2 leading-none">E-POSTA</label>
-                                        <input name="email" type="email" placeholder="destek@takason.com" className="w-full bg-stone-50 border border-stone-100 px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-serif italic outline-none focus:border-[#4a2008] transition-all shadow-inner text-stone-900 text-[13px] md:text-base" required />
+                                        <input name="email" type="email" placeholder={getContactSetting('support.contact.emailPlaceholder')} className="w-full bg-stone-50 border border-stone-100 px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-serif italic outline-none focus:border-[#4a2008] transition-all shadow-inner text-stone-900 text-[13px] md:text-base" required />
                                     </div>
                                 </div>
                                 <div className="space-y-1.5 md:space-y-2">
                                     <label className="text-[8px] md:text-[10px] font-black text-stone-400 uppercase tracking-widest pl-2 leading-none">KONU</label>
                                     <select name="subject" className="w-full bg-stone-50 border border-stone-100 px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-serif italic outline-none focus:border-[#4a2008] transition-all shadow-inner appearance-none text-stone-900 text-[13px] md:text-base">
-                                        <option>Genel Soru</option>
-                                        <option>Teknik Destek</option>
-                                        <option>Şikayet Bildirimi</option>
-                                        <option>İş Birliği</option>
+                                        {subjectOptions.map((subject) => <option key={subject}>{subject}</option>)}
                                     </select>
                                 </div>
                                 <div className="space-y-1.5 md:space-y-2">
                                     <label className="text-[8px] md:text-[10px] font-black text-stone-400 uppercase tracking-widest pl-2 leading-none">MESAJINIZ</label>
-                                    <textarea name="message" placeholder="Sorununuzdan detaylıca bahsetin..." className="w-full h-24 md:h-32 bg-stone-50 border border-stone-100 px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-serif italic outline-none focus:border-[#4a2008] transition-all shadow-inner resize-none text-stone-900 text-[13px] md:text-base" required></textarea>
+                                    <textarea name="message" placeholder={getContactSetting('support.contact.messagePlaceholder')} className="w-full h-24 md:h-32 bg-stone-50 border border-stone-100 px-4 md:px-6 py-3 md:py-4 rounded-xl md:rounded-2xl font-serif italic outline-none focus:border-[#4a2008] transition-all shadow-inner resize-none text-stone-900 text-[13px] md:text-base" required></textarea>
                                 </div>
                                 <button type="submit" className="w-full bg-stone-900 text-amber-400 py-4 md:py-5 rounded-xl md:rounded-2xl font-black text-[9px] md:text-[10px] tracking-widest uppercase hover:bg-black transition-all flex items-center justify-center gap-3 md:gap-4 shadow-xl shadow-stone-900/10 leading-none">
-                                    MESAJI GÖNDER <Send className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
+                                    {getContactSetting('support.contact.submitLabel')} <Send className="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" />
                                 </button>
                             </form>
                         </div>
@@ -222,21 +241,21 @@ export default function HelpCenter() {
                                         <Phone className="w-4 h-4 md:w-5 md:h-5 text-amber-500 shrink-0" />
                                         <div className="space-y-1">
                                             <p className="text-[8px] md:text-[9px] font-black text-stone-600 uppercase tracking-widest">TELEFON</p>
-                                            <p className="font-serif italic font-bold text-base md:text-lg">+90 212 555 0000</p>
+                                            <p className="font-serif italic font-bold text-base md:text-lg">{getContactSetting('support.contact.phone')}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4">
                                         <Mail className="w-4 h-4 md:w-5 md:h-5 text-amber-500 shrink-0" />
                                         <div className="space-y-1">
                                             <p className="text-[8px] md:text-[9px] font-black text-stone-600 uppercase tracking-widest">E-POSTA</p>
-                                            <p className="font-serif italic font-bold text-base md:text-lg">destek@takason.com</p>
+                                            <p className="font-serif italic font-bold text-base md:text-lg">{getContactSetting('support.contact.email')}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-4">
                                         <MapPin className="w-4 h-4 md:w-5 md:h-5 text-amber-500 shrink-0" />
                                         <div className="space-y-1">
                                             <p className="text-[8px] md:text-[9px] font-black text-stone-600 uppercase tracking-widest">OFİSİMİZ</p>
-                                            <p className="font-serif italic font-bold leading-tight text-sm md:text-base">Beşiktaş, İstanbul <br /> Takas Binası No:4</p>
+                                            <p className="font-serif italic font-bold leading-tight text-sm md:text-base">{getContactSetting('support.contact.office')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -246,7 +265,7 @@ export default function HelpCenter() {
                                 onClick={() => setIsContactOpen(false)}
                                 className="relative z-10 w-full py-4 border border-white/10 rounded-xl md:rounded-2xl text-[8px] md:text-[9px] font-black tracking-widest uppercase hover:bg-white hover:text-stone-900 transition-all mt-10 md:mt-0"
                             >
-                                GERİ DÖN
+                                {getContactSetting('support.contact.backLabel')}
                             </button>
                         </div>
                     </div>

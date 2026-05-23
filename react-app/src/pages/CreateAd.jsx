@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, ArrowLeft, Box, Search, Upload, Sparkles, CheckCircle2, X, Zap, Loader2, Trash2 } from 'lucide-react';
+import { Plus, ArrowLeft, Box, Search, Upload, Sparkles, CheckCircle2, X, Zap, Loader2, Trash2, Crown, AlertTriangle, Gem } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 const conditions = [
     { value: 'NEW', label: 'Sıfır Ayarında' },
@@ -18,6 +19,7 @@ const TURKEY_CITIES = [
 
 export default function CreateAd() {
     const { isAuthenticated } = useAuth();
+    const { isPremiumEnabled } = useSettings();
     const navigate = useNavigate();
     const [adType, setAdType] = useState(null);
     const [step, setStep] = useState(1);
@@ -25,6 +27,7 @@ export default function CreateAd() {
     const [categories, setCategories] = useState([]);
     const [files, setFiles] = useState([]); // File[]
     const [previews, setPreviews] = useState([]); // string[]
+    const [monthlyInfo, setMonthlyInfo] = useState(null); // { count, limit, isPremiumUser, premiumEnabled }
     const [form, setForm] = useState({
         title: '',
         categoryId: '',
@@ -43,6 +46,14 @@ export default function CreateAd() {
         api.getCategories().then((r) => setCategories(r.data || [])).catch(console.error);
     }, []);
 
+    // Aylık ilan kullanımını çek
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        api.getMonthlyItemCount()
+            .then((r) => setMonthlyInfo(r.data))
+            .catch(() => setMonthlyInfo(null));
+    }, [isAuthenticated]);
+
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [step, adType]);
@@ -50,6 +61,11 @@ export default function CreateAd() {
     useEffect(() => {
         return () => previews.forEach((url) => URL.revokeObjectURL(url));
     }, [previews]);
+
+    // Limit hesaplama yardımcıları
+    const isLimitActive = monthlyInfo?.premiumEnabled && !monthlyInfo?.isPremiumUser && monthlyInfo?.limit !== null;
+    const isLimitReached = isLimitActive && monthlyInfo?.count >= monthlyInfo?.limit;
+    const remainingAds = isLimitActive ? Math.max(0, (monthlyInfo?.limit ?? 0) - (monthlyInfo?.count ?? 0)) : null;
 
     const handleSelectType = (type) => {
         setAdType(type);
@@ -98,6 +114,8 @@ export default function CreateAd() {
     const submit = async () => {
         const err = validateStep();
         if (err) return alert(err);
+        // Frontend limit guard
+        if (isLimitReached) return;
         try {
             setSubmitting(true);
             const fd = new FormData();
@@ -118,17 +136,104 @@ export default function CreateAd() {
         finally { setSubmitting(false); }
     };
 
+    // Limit banner bileşeni
+    const LimitBanner = () => {
+        if (!isLimitActive) return null;
+        if (isLimitReached) {
+            return (
+                <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-4 md:p-5 flex flex-col md:flex-row items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
+                    </div>
+                    <div className="flex-1 text-center md:text-left">
+                        <p className="text-sm font-black text-red-700">
+                            Bu ayki {monthlyInfo?.limit} ilan hakkınızın tamamını kullandınız.
+                        </p>
+                        <p className="text-xs text-red-500 mt-0.5 italic">
+                            Sınırsız ilan yayınlamak için Premium'a geçin.
+                        </p>
+                    </div>
+                    <Link
+                        to="/premium"
+                        className="shrink-0 flex items-center gap-2 bg-amber-500 text-stone-900 px-4 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-400 transition-all"
+                    >
+                        <Crown className="w-3.5 h-3.5" /> Premium'a Geç
+                    </Link>
+                </div>
+            );
+        }
+        // Limit dolmadıysa küçük gösterge
+        const used = monthlyInfo?.count ?? 0;
+        const limit = monthlyInfo?.limit ?? 3;
+        const pct = Math.min(100, (used / limit) * 100);
+        const barColor = pct >= 66 ? '#ef4444' : pct >= 33 ? '#f59e0b' : '#22c55e';
+        return (
+            <div className="mb-6 bg-stone-50 border border-stone-200 rounded-2xl p-4 flex items-center gap-4">
+                <div className="w-9 h-9 rounded-xl bg-stone-900 flex items-center justify-center shrink-0">
+                    <Gem className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest">Aylık İlan Hakkı</span>
+                        <span className="text-[10px] font-black text-stone-700">{used}/{limit}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-stone-200 rounded-full overflow-hidden">
+                        <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${pct}%`, backgroundColor: barColor }}
+                        />
+                    </div>
+                    <p className="text-[9px] text-stone-400 italic mt-1">{remainingAds} ilan hakkınız kaldı. Sınırsız için <Link to="/premium" className="text-amber-600 font-black hover:underline">Premium'a geçin</Link>.</p>
+                </div>
+            </div>
+        );
+    };
+
     if (!adType) {
         return (
             <div className="min-h-screen bg-[#f5f1ed] pb-24">
                 <div className="container mx-auto px-4 md:px-6 max-w-5xl pt-4 md:pt-20">
-                    <div className="text-center space-y-2 md:space-y-4 mb-4 md:mb-20">
+                    <div className="text-center space-y-2 md:space-y-4 mb-4 md:mb-12">
                         <div className="w-8 h-8 md:w-16 md:h-16 bg-stone-900 rounded-xl md:rounded-3xl flex items-center justify-center mx-auto shadow-2xl rotate-6">
                             <Sparkles className="w-4 h-4 md:w-8 md:h-8 text-[#f5f1ed]" />
                         </div>
                         <h1 className="text-xl md:text-5xl font-serif font-black text-stone-900 italic tracking-tighter leading-tight">İlan Türünü <span style={{ color: '#4a2008' }}>Seçin</span></h1>
                         <p className="text-stone-400 italic text-[10px] md:text-lg">Takas dünyasına hangi adımla girmek istersiniz?</p>
                     </div>
+
+                    {/* Limit dolduysa engel bannerı */}
+                    {isLimitReached && (
+                        <div className="mb-8 bg-red-50 border border-red-200 rounded-2xl p-5 md:p-8 flex flex-col items-center gap-4 text-center">
+                            <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center">
+                                <AlertTriangle className="w-7 h-7 text-red-500" />
+                            </div>
+                            <div>
+                                <p className="text-base md:text-xl font-black text-red-700 font-serif italic">
+                                    Bu ay {monthlyInfo?.limit} ilan hakkınızın tamamını kullandınız.
+                                </p>
+                                <p className="text-xs text-red-500 mt-1 italic">
+                                    Bir sonraki ayın başında hakkınız yenilenecektir.
+                                </p>
+                            </div>
+                            <Link
+                                to="/premium"
+                                className="flex items-center gap-2 bg-amber-500 text-stone-900 px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-amber-400 transition-all shadow-lg"
+                            >
+                                <Crown className="w-4 h-4" /> Sınırsız İlan İçin Premium'a Geç
+                            </Link>
+                        </div>
+                    )}
+
+                    {/* Limit dolmadıysa ama aktifse, küçük bilgi çubuğu */}
+                    {isLimitActive && !isLimitReached && (
+                        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-3 md:p-4 flex items-center gap-3">
+                            <Gem className="w-4 h-4 text-amber-500 shrink-0" />
+                            <p className="text-[10px] md:text-xs text-amber-700 font-black">
+                                Bu ay <span className="text-amber-900">{remainingAds}</span> ilan hakkınız kaldı.
+                                <Link to="/premium" className="ml-1 underline text-amber-800 hover:text-amber-900">Premium'a geçerek sınırsız ilan yayınlayabilirsiniz.</Link>
+                            </p>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-10">
                         <button onClick={() => handleSelectType('have')} className="bg-white p-4 md:p-12 rounded-[1.5rem] md:rounded-[4rem] border border-stone-100 shadow-2xl group hover:-translate-y-3 transition-all duration-500 text-left relative overflow-hidden">
@@ -182,6 +287,9 @@ export default function CreateAd() {
                         </div>
                     </div>
                 </div>
+
+                {/* Form başında limit göstergesi */}
+                <LimitBanner />
 
                 <div className="bg-white border border-stone-100 rounded-[1.5rem] md:rounded-[3rem] p-4 md:p-12 shadow-2xl space-y-6 md:space-y-10">
                     {step === 1 && (
@@ -246,6 +354,9 @@ export default function CreateAd() {
                                 <div>
                                     <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2">TAHMİNİ DEĞER (₺)</label>
                                     <input type="number" value={form.estimatedValue} onChange={(e) => upd('estimatedValue', e.target.value)} placeholder="0" className="w-full bg-stone-50 border border-stone-200 px-4 py-3 rounded-xl focus:border-stone-900 outline-none text-sm md:text-base" />
+                                    <p className="mt-1.5 text-[10px] text-stone-400 italic leading-relaxed">
+                                        Bu değer tamamen sizin belirlediğiniz tahmini bir rakamdır. Platform bağımsız bir fiyat tespiti yapmamaktadır.
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -277,6 +388,13 @@ export default function CreateAd() {
                             <button onClick={next} className="w-full md:w-auto bg-stone-900 text-white px-6 md:px-12 py-3.5 md:py-5 rounded-xl md:rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-black transition-all shadow-xl flex items-center justify-center gap-3">
                                 SONRAKİ <Plus className="w-4 h-4 text-amber-500" />
                             </button>
+                        ) : isLimitReached ? (
+                            <Link
+                                to="/premium"
+                                className="w-full md:w-auto bg-amber-500 text-stone-900 px-6 md:px-12 py-3.5 md:py-5 rounded-xl md:rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-amber-400 transition-all shadow-2xl flex items-center justify-center gap-3"
+                            >
+                                <Crown className="w-4 h-4" /> PREMIUM'A GEÇ
+                            </Link>
                         ) : (
                             <button onClick={submit} disabled={submitting} className="w-full md:w-auto bg-amber-500 text-stone-900 px-6 md:px-12 py-3.5 md:py-5 rounded-xl md:rounded-2xl font-black text-[10px] tracking-widest uppercase hover:bg-amber-400 transition-all shadow-2xl flex items-center justify-center gap-3 disabled:opacity-50">
                                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 fill-stone-900" />} İLANINI YAYINLA

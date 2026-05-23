@@ -42,6 +42,8 @@ export default function Messages() {
             setActiveRoom(room);
             setMessages(room.messages || []);
             setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, 50);
+            // Odadaki okunmamış mesajları arka planda okundu işaretle
+            api.markRoomRead(id).catch(() => {});
         } catch (e) { alert(e.message); }
         finally { setLoadingRoom(false); }
     };

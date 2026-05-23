@@ -142,6 +142,19 @@
         scrollbar-width: none;
     }
 
+    .pb-safe {
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+    }
+
+    .pt-safe {
+        padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+    }
+
+    .h-screen-safe {
+        height: 100dvh;
+        min-height: 100svh;
+    }
+
     .animate-float {
         animation: float 6s ease-in-out infinite;
     }

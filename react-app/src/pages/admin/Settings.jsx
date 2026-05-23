@@ -12,6 +12,7 @@ const groupMeta = {
     theme: { label: 'Tema', icon: Palette },
     premium: { label: 'Premium Modülü', icon: Crown },
     auth: { label: 'Kimlik Doğrulama', icon: Lock },
+    support: { label: 'Destek Formu', icon: MessageSquare },
 };
 
 export default function Settings() {
@@ -124,6 +125,8 @@ export default function Settings() {
                                 </select>
                             ) : s.type === 'JSON' ? (
                                 <textarea rows="6" className="w-full bg-stone-50 border border-stone-200 px-3 py-2 rounded-lg text-sm font-mono whitespace-pre" value={s.value} onChange={(e) => updateLocal(s.key, e.target.value)} />
+                            ) : s.type === 'TEXT' ? (
+                                <textarea rows="3" className="w-full bg-stone-50 border border-stone-200 px-3 py-2 rounded-lg text-sm" value={s.value} onChange={(e) => updateLocal(s.key, e.target.value)} />
                             ) : s.key.includes('password') || s.key.includes('Secret') ? (
                                 <input type="password" className="w-full bg-stone-50 border border-stone-200 px-3 py-2 rounded-lg text-sm" value={s.value} onChange={(e) => updateLocal(s.key, e.target.value)} placeholder="(boş = değiştirme)" />
                             ) : (

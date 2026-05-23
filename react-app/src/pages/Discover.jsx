@@ -162,11 +162,12 @@ export default function Discover() {
         try {
             setLoadingLikeIds(prev => new Set(prev).add(adId));
             const r = await api.toggleFavorite(adId);
+            const isFav = !!r.data?.isFavorited;
             setDiscoverAds(prev => prev.map(ad => 
                 ad.id === adId ? { 
                     ...ad, 
-                    isLiked: r.isFavorited, 
-                    likes: r.isFavorited ? Math.max(0, ad.likes + 1) : Math.max(0, ad.likes - 1) 
+                    isLiked: isFav, 
+                    likes: isFav ? Math.max(0, ad.likes + 1) : Math.max(0, ad.likes - 1) 
                 } : ad
             ));
         } catch (err) { 
@@ -441,9 +442,9 @@ export default function Discover() {
 
             {/* FEED VIEW (Reels Mode) */}
             {viewMode === 'feed' && (
-                <div className="fixed inset-0 z-[2000] bg-black overflow-hidden select-none h-full w-full">
+                <div className="fixed inset-0 z-[10050] bg-black overflow-hidden select-none h-full w-full h-screen-safe">
                     {/* Top Controls */}
-                    <div className="absolute top-6 md:top-8 left-6 md:left-8 z-[2100]">
+                    <div className="absolute top-4 left-4 md:top-8 md:left-8 z-[2100] pt-safe">
                         <button
                             onClick={closeFeed}
                             className="p-2.5 md:p-4 bg-white/10 backdrop-blur-xl border border-white/10 text-white rounded-xl md:rounded-2xl hover:bg-white hover:text-black transition-all group flex items-center gap-2 md:gap-3"
@@ -465,12 +466,12 @@ export default function Discover() {
                                 <div
                                     key={ad.id}
                                     ref={el => adRefs.current[ad.id] = el}
-                                    className="h-screen w-full snap-start relative flex items-center justify-center overflow-hidden shrink-0"
+                                    className="h-screen-safe w-full snap-start snap-always relative flex flex-col overflow-hidden shrink-0"
                                 >
-                                    <img src={ad.images[currentImgIndex]} alt="" className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-35 scale-110 transition-all duration-700" />
-                                    <div className="absolute inset-0 bg-black/50"></div>
+                                    <img src={ad.images[currentImgIndex]} alt="" className="absolute inset-0 w-full h-full object-cover blur-[100px] opacity-35 scale-110 transition-all duration-700 pointer-events-none" />
+                                    <div className="absolute inset-0 bg-black/50 pointer-events-none"></div>
 
-                                    <div className="container mx-auto max-w-7xl h-full flex items-center justify-center gap-12 relative px-4 z-20">
+                                    <div className="container mx-auto max-w-7xl flex-1 min-h-0 flex items-stretch justify-center gap-12 relative px-2 sm:px-4 z-20 py-2 md:py-0">
 
                                         {/* LEFT PANEL */}
                                         <div className="hidden lg:flex flex-col w-80 space-y-8 animate-in slide-in-from-left-5 duration-700">
@@ -502,7 +503,7 @@ export default function Discover() {
                                         </div>
 
                                         {/* CENTER: REELS MAIN FRAME */}
-                                        <div className="relative h-full w-full md:aspect-[9/16] md:max-h-[900px] md:max-w-[500px] bg-stone-900 shadow-[0_0_120px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col items-center justify-center md:rounded-[4rem] group border border-stone-800 md:border-white/5 animate-in zoom-in-95 duration-500 shrink-0">
+                                        <div className="relative flex-1 min-h-0 w-full max-w-[500px] mx-auto md:aspect-[9/16] md:max-h-[900px] md:h-auto md:flex-none bg-stone-900 shadow-[0_0_120px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col md:rounded-[4rem] group border border-stone-800 md:border-white/5 animate-in zoom-in-95 duration-500">
 
                                             {/* Share Overlay */}
                                             {sharingAdId === ad.id && (
@@ -544,7 +545,7 @@ export default function Discover() {
                                                     <div className="flex items-center justify-between p-5 border-b border-white/5">
                                                         <div className="flex items-center gap-3">
                                                             <MessageCircle className="w-5 h-5 text-amber-500" />
-                                                            <h3 className="text-white font-serif italic text-lg font-black">Yorumlar <span className="text-white/50">({ad.comments.length})</span></h3>
+                                                            <h3 className="text-white font-serif italic text-lg font-black">Yorumlar <span className="text-white/50">({activeAdComments.length})</span></h3>
                                                         </div>
                                                         <button onClick={() => setIsCommentsOpen(false)} className="w-8 h-8 flex items-center justify-center bg-white/5 rounded-full text-white/50 hover:text-white transition-colors">
                                                             <X className="w-5 h-5" />
@@ -586,33 +587,32 @@ export default function Discover() {
                                                 </div>
                                             )}
 
-                                            <div
-                                                className="absolute inset-0 flex overflow-x-scroll snap-x snap-mandatory no-scrollbar"
-                                                onScroll={(e) => handleHorizontalScroll(ad.id, e)}
-                                            >
-                                                {ad.images.map((img, i) => (
-                                                    <div key={i} className="min-w-full h-full snap-start shrink-0">
-                                                        <img src={img} alt="" className="w-full h-full object-cover" />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="absolute top-12 md:top-24 left-1/2 -translate-x-1/2 flex gap-1.5 z-[2100]">
-                                                {ad.images.map((_, i) => (
-                                                    <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === currentImgIndex ? 'w-4 md:w-6 bg-amber-500' : 'w-1 md:w-1.5 bg-white/30'}`} />
-                                                ))}
-                                            </div>
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-transparent to-black/30 flex flex-col justify-end p-6 pb-[6.5rem] md:p-8 md:pb-12 gap-6 md:gap-8 pointer-events-none z-10">
-                                                <div className="hidden md:flex absolute top-6 md:top-8 left-6 md:left-8 items-center gap-2.5 md:gap-3 pointer-events-auto">
-                                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-amber-500 flex items-center justify-center text-stone-900 font-black italic shadow-2xl text-sm leading-none">{ad.user[0]}</div>
-                                                    <div className="space-y-0.5">
-                                                        <h4 className="text-white font-bold text-xs md:text-sm leading-none shrink-0 truncate max-w-[120px]">{ad.user}</h4>
-                                                        <div className="flex items-center gap-1.5 text-stone-300">
-                                                            <MapPin className="w-2.5 h-2.5 text-amber-500" />
-                                                            <span className="text-[8px] md:text-[9px] font-black tracking-widest uppercase truncate max-w-[100px]">{ad.location}</span>
+                                            {/* Görsel alanı — mobilde tam fotoğraf, tablette/desktop'ta cover */}
+                                            <div className="relative flex-1 min-h-0 w-full overflow-hidden">
+                                                <div
+                                                    className="absolute inset-0 flex overflow-x-scroll snap-x snap-mandatory no-scrollbar"
+                                                    onScroll={(e) => handleHorizontalScroll(ad.id, e)}
+                                                >
+                                                    {ad.images.map((img, i) => (
+                                                        <div key={i} className="min-w-full h-full snap-start shrink-0 flex items-center justify-center bg-stone-950">
+                                                            <img
+                                                                src={img}
+                                                                alt=""
+                                                                className="w-full h-full object-contain lg:object-cover"
+                                                            />
                                                         </div>
-                                                    </div>
+                                                    ))}
                                                 </div>
-                                                <div className="absolute right-4 md:right-8 bottom-[13rem] md:bottom-40 flex flex-col gap-4 md:gap-6 items-center pointer-events-auto">
+                                                <div className="absolute top-3 md:top-24 left-1/2 -translate-x-1/2 flex gap-1.5 z-[2100] pt-safe">
+                                                    {ad.images.map((_, i) => (
+                                                        <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === currentImgIndex ? 'w-4 md:w-6 bg-amber-500' : 'w-1 md:w-1.5 bg-white/30'}`} />
+                                                    ))}
+                                                </div>
+                                                <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/50 to-transparent md:from-black/30" />
+                                            </div>
+
+                                            {/* Sağ aksiyonlar — mobilde ortada, masaüstünde altta */}
+                                            <div className="absolute right-3 sm:right-4 top-[38%] -translate-y-1/2 z-30 flex flex-col gap-3 sm:gap-4 items-center pointer-events-auto md:top-auto md:translate-y-0 md:bottom-40 md:right-8 md:gap-6">
                                                     <div className="flex flex-col items-center gap-1">
                                                         <button 
                                                             onClick={() => toggleLike(ad.id)}
@@ -657,23 +657,36 @@ export default function Discover() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="space-y-3 md:space-y-6 pointer-events-auto -mt-2">
-                                                    <div className="flex md:hidden items-center gap-2 mb-1">
-                                                        <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center text-stone-900 font-black italic shadow-md text-[10px] leading-none">{ad.user[0]}</div>
-                                                        <h4 className="text-white font-bold text-[11px] leading-none truncate">{ad.user}</h4>
-                                                        <div className="w-1 h-1 rounded-full bg-white/30"></div>
-                                                        <div className="flex items-center gap-1">
-                                                            <MapPin className="w-2.5 h-2.5 text-amber-500" />
-                                                            <span className="text-[9px] font-medium text-white/50">{ad.location}</span>
+
+                                            {/* Alt bilgi paneli — her zaman görünür (mobil/tablet) */}
+                                            <div className="relative z-20 shrink-0 w-full bg-gradient-to-t from-black via-black/95 to-black/70 px-4 pt-4 pb-safe sm:px-5 sm:pt-5 lg:absolute lg:inset-x-0 lg:bottom-0 lg:px-8 lg:pt-10 lg:pb-12 lg:bg-gradient-to-t lg:from-black/95 lg:via-black/60 lg:to-transparent pointer-events-auto">
+                                                <div className="hidden lg:flex absolute top-8 left-8 items-center gap-3">
+                                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-amber-500 flex items-center justify-center text-stone-900 font-black italic shadow-2xl text-sm leading-none">{ad.user[0]}</div>
+                                                    <div className="space-y-0.5 min-w-0">
+                                                        <h4 className="text-white font-bold text-xs md:text-sm leading-none truncate max-w-[140px]">{ad.user}</h4>
+                                                        <div className="flex items-center gap-1.5 text-stone-300">
+                                                            <MapPin className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                                                            <span className="text-[8px] md:text-[9px] font-black tracking-widest uppercase truncate max-w-[120px]">{ad.location}</span>
                                                         </div>
                                                     </div>
-                                                    <div className="space-y-0.5 md:space-y-2">
-                                                        <h2 className="text-xl md:text-3xl font-serif font-black text-white italic tracking-tighter leading-tight">{ad.title}</h2>
+                                                </div>
+                                                <div className="space-y-3 lg:space-y-6 pr-14 sm:pr-16 lg:pr-0">
+                                                    <div className="flex lg:hidden items-center gap-2 min-w-0">
+                                                        <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-stone-900 font-black italic shadow-md text-[10px] leading-none shrink-0">{ad.user[0]}</div>
+                                                        <h4 className="text-white font-bold text-xs leading-none truncate min-w-0">{ad.user}</h4>
+                                                        <div className="w-1 h-1 rounded-full bg-white/30 shrink-0" />
+                                                        <div className="flex items-center gap-1 min-w-0">
+                                                            <MapPin className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                                                            <span className="text-[9px] font-medium text-white/60 truncate">{ad.location}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center pt-1 md:pt-2">
+                                                    <div className="space-y-1 md:space-y-2">
+                                                        <h2 className="text-lg sm:text-xl md:text-3xl font-serif font-black text-white italic tracking-tighter leading-snug line-clamp-2">{ad.title}</h2>
+                                                    </div>
+                                                    <div className="flex items-center pt-0.5 md:pt-2">
                                                         <Link
                                                             to={`/teklif-ver/${ad.id}`}
-                                                            className="w-full bg-amber-500 text-stone-900 py-3.5 md:py-5 rounded-xl md:rounded-2xl font-black text-[9px] md:text-[10px] tracking-widest uppercase hover:bg-stone-900 hover:text-amber-500 transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-2 md:gap-3 shrink-0 leading-none"
+                                                            className="w-full bg-amber-500 text-stone-900 py-3 sm:py-3.5 md:py-5 rounded-xl md:rounded-2xl font-black text-[9px] md:text-[10px] tracking-widest uppercase hover:bg-stone-900 hover:text-amber-500 transition-all shadow-2xl active:scale-95 flex items-center justify-center gap-2 md:gap-3 shrink-0 leading-none"
                                                         >
                                                             <Zap className="w-3.5 h-3.5 md:w-5 md:h-5 fill-current shrink-0" /> TEKLİF VER
                                                         </Link>
@@ -686,7 +699,7 @@ export default function Discover() {
                                         <div className={`hidden lg:flex flex-col w-80 h-[600px] transition-all duration-700 shrink-0 ${isCommentsOpen && lastOpenedAdId === ad.id ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 translate-x-10 scale-95 pointer-events-none'}`}>
                                             <div className="bg-white/5 backdrop-blur-2xl border border-white/10 p-8 rounded-[3rem] h-full flex flex-col">
                                                 <div className="flex items-center justify-between mb-8">
-                                                    <h3 className="text-white font-serif italic text-2xl font-black">Yorumlar <span style={{ color: '#FFF8E7' }}>({ad.comments.length})</span></h3>
+                                                    <h3 className="text-white font-serif italic text-2xl font-black">Yorumlar <span style={{ color: '#FFF8E7' }}>({activeAdComments.length})</span></h3>
                                                     <MessageCircle className="w-6 h-6 text-amber-500" />
                                                 </div>
                                                 <div className="flex-1 overflow-y-auto space-y-6 pr-2 no-scrollbar">
@@ -727,7 +740,7 @@ export default function Discover() {
 
                                         {/* SCROLL HINT ARROW */}
                                         {showHint && ad.id === lastOpenedAdId && (
-                                            <div className="absolute inset-x-0 bottom-24 md:bottom-12 z-[2500] flex flex-col items-center gap-2 animate-float-arrow pointer-events-none">
+                                            <div className="absolute inset-x-0 bottom-[11rem] sm:bottom-28 md:bottom-12 z-[2500] flex flex-col items-center gap-2 animate-float-arrow pointer-events-none">
                                                 <span className="text-[9px] md:text-[10px] font-black text-white/50 tracking-[0.3em] uppercase italic font-serif">KAYDIR</span>
                                                 <ChevronDown className="w-6 h-6 md:w-8 md:h-8 text-amber-500/50" />
                                             </div>

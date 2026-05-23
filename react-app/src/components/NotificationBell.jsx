@@ -3,7 +3,7 @@ import { Bell, Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 
-export default function NotificationBell() {
+export default function NotificationBell({ onUnreadChange }) {
     const [items, setItems] = useState([]);
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
@@ -28,6 +28,11 @@ export default function NotificationBell() {
     }, []);
 
     const unread = items.filter((n) => !n.isRead).length;
+
+    // Unread sayısı değiştiğinde parent'a bildir
+    useEffect(() => {
+        onUnreadChange?.(unread);
+    }, [unread, onUnreadChange]);
 
     const markRead = async (id) => {
         try { await api.markNotificationRead(id); setItems((p) => p.map((n) => n.id === id ? { ...n, isRead: true } : n)); } catch (e) { /* yut */ }

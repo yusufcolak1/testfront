@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Mail, Phone, MapPin, Save, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, MapPin, Save, Loader2, CheckCircle2, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../lib/api';
+import { getFullImageUrl } from '../../utils/helpers';
 
 export default function PersonalSettings() {
     const navigate = useNavigate();
@@ -19,6 +20,9 @@ export default function PersonalSettings() {
         bio: '',
     });
 
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState('');
+
     useEffect(() => {
         if (user?.profile) {
             setFormData({
@@ -28,8 +32,23 @@ export default function PersonalSettings() {
                 city: user.profile.city || '',
                 bio: user.profile.bio || '',
             });
+            if (user.profile.avatarUrl) {
+                setImagePreview(getFullImageUrl(user.profile.avatarUrl));
+            }
         }
     }, [user]);
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -38,7 +57,17 @@ export default function PersonalSettings() {
         setSuccess(false);
 
         try {
-            const resp = await api.updateMyProfile(formData);
+            const submitData = new FormData();
+            submitData.append('firstName', formData.firstName);
+            submitData.append('lastName', formData.lastName);
+            submitData.append('phone', formData.phone);
+            submitData.append('city', formData.city);
+            submitData.append('bio', formData.bio);
+            if (imageFile) {
+                submitData.append('image', imageFile);
+            }
+
+            const resp = await api.updateMyProfile(submitData);
             if (resp.success) {
                 setSuccess(true);
                 await checkAuth(); // Global user state'i güncelle
@@ -71,8 +100,23 @@ export default function PersonalSettings() {
 
                 <div className="space-y-6 md:space-y-8">
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-3 md:gap-6 text-center md:text-left mb-4 md:mb-6">
-                        <div className="w-12 h-12 md:w-20 md:h-20 rounded-xl md:rounded-3xl bg-amber-500 flex items-center justify-center text-xl md:text-3xl font-black text-stone-900 shadow-xl shadow-amber-500/20 shrink-0">
-                            {(formData.firstName[0] || user.email[0]).toUpperCase()}
+                        <div className="relative group shrink-0">
+                            <div className="w-16 h-16 md:w-24 md:h-24 rounded-2xl md:rounded-[2rem] bg-amber-500 flex items-center justify-center text-xl md:text-4xl font-black text-stone-900 shadow-xl shadow-amber-500/20 overflow-hidden relative border-4 border-white">
+                                {imagePreview ? (
+                                    <img src={imagePreview} alt="Profil Önizleme" className="w-full h-full object-cover" />
+                                ) : (
+                                    (formData.firstName[0] || user.email[0]).toUpperCase()
+                                )}
+                            </div>
+                            <label className="absolute -bottom-1 -right-1 md:-bottom-2 md:-right-2 bg-stone-900 hover:bg-amber-500 text-white hover:text-stone-900 p-1.5 md:p-2 rounded-xl shadow-lg cursor-pointer transition-all border border-stone-800">
+                                <Camera className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleImageChange} 
+                                    className="hidden" 
+                                />
+                            </label>
                         </div>
                         <div className="space-y-0.5 md:space-y-1">
                             <h1 className="text-2xl md:text-4xl font-serif font-black text-stone-900 italic leading-tight">Kişisel Bilgiler</h1>

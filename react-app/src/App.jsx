@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import IntroCanvas from './components/IntroCanvas';
 import LoginModal from './components/LoginModal';
@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useSettings } from './contexts/SettingsContext';
 import api from './lib/api';
+import { getFullImageUrl } from './utils/helpers';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminUsers from './pages/admin/Users';
@@ -47,6 +48,7 @@ import MyAds from './pages/settings/MyAds';
 import SwapHistory from './pages/settings/SwapHistory';
 import PremiumDetails from './pages/settings/PremiumDetails';
 import ListingPage from './pages/ListingPage';
+import UserPublicProfile from './pages/UserPublicProfile';
 
 // Global Scroll to Top Helper
 function ScrollToTop() {
@@ -63,11 +65,94 @@ function App() {
 
   const navigate = useNavigate();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { user, isAuthenticated, isAdmin, loading: authLoading, logout, isLoginModalOpen, openLoginModal, closeLoginModal } = useAuth();
+  const { user, isAuthenticated, isAdmin, logout, isLoginModalOpen, openLoginModal, closeLoginModal } = useAuth();
   const { isPremiumEnabled, loading: settingsLoading } = useSettings();
 
   const [activeLeaderNavBar, setActiveLeaderNavBar] = useState(0);
   const [leaders, setLeaders] = useState([]);
+
+  // ---- Sekme bildirimi (unread sayısı → title + favicon badge) ----
+  const [unreadCount, setUnreadCount] = useState(0);      // bildirimler
+  const [unreadMessages, setUnreadMessages] = useState(0); // mesajlar
+  const BASE_TITLE = 'TakasOn - Her Eşya Bir Şansı Hak Eder';
+  const isTabFocused = useRef(true);
+
+  // Favicon'u canvas üzerinde kırmızı badge ile yeniden çiz
+  const drawFaviconBadge = useCallback((count) => {
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (!favicon) return;
+    const img = new Image();
+    img.src = '/logo.png';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 32;
+      canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      const scaleFactor = 1.3;
+      const ratio = Math.min(32 / img.width, 32 / img.height) * scaleFactor;
+      const nw = img.width * ratio;
+      const nh = img.height * ratio;
+      ctx.drawImage(img, (32 - nw) / 2, (32 - nh) / 2, nw, nh);
+      if (count > 0) {
+        // Kırmızı daire badge
+        const r = 8;
+        const bx = 32 - r;
+        const by = r;
+        ctx.beginPath();
+        ctx.arc(bx, by, r, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+        ctx.font = 'bold 10px Arial';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(count > 9 ? '9+' : String(count), bx, by);
+      }
+      favicon.href = canvas.toDataURL('image/png');
+    };
+  }, []);
+
+  // Sekme başlığını + favicon'u güncelle
+  useEffect(() => {
+    const total = unreadCount + unreadMessages;
+    if (total > 0) {
+      document.title = `(${total}) ${BASE_TITLE}`;
+    } else {
+      document.title = BASE_TITLE;
+    }
+    drawFaviconBadge(total);
+  }, [unreadCount, unreadMessages, drawFaviconBadge]);
+
+  // Sekme geri odaklanınca başlıktan zil ikonunu kaldır
+  useEffect(() => {
+    const onFocus = () => { isTabFocused.current = true; };
+    const onBlur = () => { isTabFocused.current = false; };
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
+
+  const handleUnreadChange = useCallback((count) => {
+    setUnreadCount(count);
+  }, []);
+
+  // Okunmamış mesajları periyodik çek
+  useEffect(() => {
+    if (!isAuthenticated) { setUnreadMessages(0); return; }
+    const fetchUnreadMessages = async () => {
+      try {
+        const r = await api.getUnreadMessageCount();
+        setUnreadMessages(r.data?.unread || 0);
+      } catch (_) { /* sessizce yut */ }
+    };
+    fetchUnreadMessages();
+    const t = setInterval(fetchUnreadMessages, 30000);
+    return () => clearInterval(t);
+  }, [isAuthenticated]);
+  // ---- /sekme bildirimi ----
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +160,13 @@ function App() {
       try {
         const r = await api.getLeaderboard(3);
         if (cancelled) return;
-        setLeaders((r.data || []).map((u) => ({ name: u.name, medal: u.medal || '⭐' })));
+        setLeaders((r.data || []).map((u) => {
+          let medalIcon = '⭐';
+          if (u.rank === 1) medalIcon = '👑';
+          else if (u.rank === 2) medalIcon = '🥈';
+          else if (u.rank === 3) medalIcon = '🥉';
+          return { name: u.name, medal: medalIcon };
+        }));
       } catch (e) { /* sessizce yut — header */ }
     })();
     return () => { cancelled = true; };
@@ -100,8 +191,8 @@ function App() {
     return sessionStorage.getItem('takason_intro_played') === 'true';
   });
 
-  // Eğer ana sayfadaysak ve henüz animasyon oynamadıysa Intro'yu göster
-  const showIntro = isHome && !hasPlayedIntro;
+  // Intro animasyonunu tamamen devre dışı bırakıyoruz
+  const showIntro = false;
 
   useEffect(() => {
     if (location.pathname === '/ilan-ver' && !isAuthenticated) {
@@ -127,26 +218,7 @@ function App() {
   };
 
   useEffect(() => {
-    const favicon = document.querySelector('link[rel="icon"]');
-    if (!favicon) return;
-    const image = new Image();
-    image.src = '/logo.png';
-    image.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 32;
-      canvas.height = 32;
-      const ctx = canvas.getContext('2d');
-      // En-boy oranını bozmadan sığdır ve %30 büyüt (Zoom efekti)
-      const scaleFactor = 1.3;
-      const ratio = Math.min(canvas.width / image.width, canvas.height / image.height) * scaleFactor;
-      const nw = image.width * ratio;
-      const nh = image.height * ratio;
-      const x = (canvas.width - nw) / 2;
-      const y = (canvas.height - nh) / 2;
-      ctx.clearRect(0, 0, 32, 32);
-      ctx.drawImage(image, x, y, nw, nh);
-      favicon.href = canvas.toDataURL('image/png');
-    };
+    // Favicon başlangıçta badge olmadan çiz (unreadCount effect'i hallediyor)
   }, []);
 
   return (
@@ -223,7 +295,7 @@ function App() {
                 { name: 'Ana Sayfa', path: '/', icon: HomeIcon },
                 { name: 'Keşfet', path: '/kesfet', icon: Compass },
                 { name: 'İlan Ver', path: '/ilan-ver', icon: PlusCircle },
-                ...(isPremiumEnabled && !settingsLoading ? [{ name: 'Premium', path: '/premium', icon: Crown }] : []),
+                { name: 'Premium', path: '/premium', icon: Crown },
                 { name: 'Mesajlar', path: '/mesajlar', icon: MessageCircle, requireAuth: true },
                 { name: 'Favorilerim', path: '/favoriler', icon: Heart }
               ].filter(item => !item.requireAuth || isAuthenticated).map((item) => (
@@ -267,7 +339,7 @@ function App() {
                 ))}
               </div>
 
-              {isAuthenticated && <NotificationBell />}
+              {isAuthenticated && <NotificationBell onUnreadChange={handleUnreadChange} />}
 
               {isAuthenticated ? (
                 <div className="relative group shrink-0">
@@ -276,8 +348,12 @@ function App() {
                       <span className="text-[10px] font-black text-stone-500 uppercase tracking-widest hidden md:block group-hover:text-stone-900 transition-colors">
                         {user?.profile?.firstName || 'Kullanıcı'}
                       </span>
-                      <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-stone-900 flex items-center justify-center text-xs font-black text-[#FFF8E7] border border-stone-800 shadow-md">
-                        {(user?.profile?.firstName?.[0] || 'K').toUpperCase()}
+                      <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full bg-stone-900 flex items-center justify-center text-xs font-black text-[#FFF8E7] border border-stone-800 shadow-md overflow-hidden">
+                        {user?.profile?.avatarUrl ? (
+                          <img src={getFullImageUrl(user.profile.avatarUrl)} alt={user.profile.firstName} className="w-full h-full object-cover rounded-full" />
+                        ) : (
+                          (user?.profile?.firstName?.[0] || 'K').toUpperCase()
+                        )}
                       </div>
                     </div>
                   </Link>
@@ -338,7 +414,7 @@ function App() {
             { name: 'Ana', path: '/', icon: HomeIcon },
             { name: 'Keşfet', path: '/kesfet', icon: Compass },
             { name: 'İlan Ver', path: '/ilan-ver', icon: PlusCircle, special: true },
-            ...(isPremiumEnabled && !settingsLoading ? [{ name: 'Premium', path: '/premium', icon: Crown }] : []),
+            { name: 'Premium', path: '/premium', icon: Crown },
             { name: 'Mesaj', path: '/mesajlar', icon: MessageCircle, requireAuth: true },
             { name: 'Favoriler', path: '/favoriler', icon: Heart }
           ].filter(item => !item.requireAuth || isAuthenticated).map((item) => {
@@ -383,10 +459,11 @@ function App() {
             <Route path="/ilan-ver" element={<CreateAd />} />
             <Route path="/mesajlar" element={<Messages />} />
             <Route path="/liderler" element={<Leaderboard />} />
-            <Route path="/premium" element={settingsLoading ? null : (isPremiumEnabled ? <Premium /> : <Navigate to="/" replace />)} />
+            <Route path="/premium" element={<Premium />} />
             <Route path="/profil" element={<Profile />} />
             <Route path="/arama" element={<SearchResults />} />
             <Route path="/ilan/:id" element={<AdDetail />} />
+            <Route path="/kullanici/:id" element={<UserPublicProfile />} />
             <Route path="/ilan/:itemId/eslesmeler" element={isAuthenticated ? <Matches /> : <Navigate to="/" replace />} />
             <Route path="/son-ilanlar" element={<ListingPage title="Son İlanlar" />} />
             <Route path="/one-cikan-ilanlar" element={<ListingPage title="Öne Çıkan İlanlar" />} />
@@ -404,7 +481,7 @@ function App() {
             <Route path="/guvenli-takas" element={<SafeSwapGuide />} />
             <Route path="/kvkk" element={<KVKK />} />
             {/* Admin Routes — sadece admin */}
-            <Route path="/admin" element={authLoading ? null : (isAdmin ? <AdminLayout /> : <Navigate to="/" replace />)}>
+            <Route path="/admin" element={isAdmin ? <AdminLayout /> : <Navigate to="/" replace />}>
               <Route index element={<AdminDashboard />} />
               <Route path="kullanicilar" element={<AdminUsers />} />
               <Route path="ilanlar" element={<AdminItems />} />

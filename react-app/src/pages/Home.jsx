@@ -1,4 +1,4 @@
-import { Search, Smartphone, Sofa, Shirt, BookOpen, Music, Bike, Watch, Gamepad2, Box, ArrowRight, ChevronLeft, ChevronRight, Star, Award, Heart, HelpCircle } from 'lucide-react';
+import { Search, Smartphone, Sofa, Shirt, BookOpen, Music, Bike, Watch, Gamepad2, Box, ArrowRight, ChevronLeft, ChevronRight, Star, Award, Heart, HelpCircle, Baby, Boxes, Home as HomeIcon, Car, Sparkles, Palette, Briefcase } from 'lucide-react';
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
@@ -15,6 +15,13 @@ export default function Home() {
         { icon: Bike, label: 'Spor & Outdoor', slug: 'spor-outdoor' },
         { icon: Watch, label: 'Antika', slug: 'antika' },
         { icon: Gamepad2, label: 'Oyun & Konsol', slug: 'oyun-konsol' },
+        { icon: Boxes, label: 'Oyuncak & Hobi', slug: 'oyuncak-hobi' },
+        { icon: Baby, label: 'Bebek & Anne', slug: 'bebek-anne' },
+        { icon: HomeIcon, label: 'Ev & Yaşam', slug: 'ev-yasam' },
+        { icon: Car, label: 'Otomotiv', slug: 'otomotiv' },
+        { icon: Sparkles, label: 'Kozmetik', slug: 'kozmetik' },
+        { icon: Palette, label: 'Hobi & Sanat', slug: 'hobi-sanat' },
+        { icon: Briefcase, label: 'Ofis & Kırtasiye', slug: 'ofis-kirtasiye' },
         { icon: Box, label: 'Diğer', slug: 'diger' },
     ];
 
@@ -38,9 +45,9 @@ export default function Home() {
             try {
                 setLoading(true);
                 const requests = [
-                    api.getItems({ limit: 40, sort: 'newest' }),
-                    api.getItems({ limit: 40, isFeatured: 'true' }),
-                    api.getItems({ limit: 40, isPopular: 'true' }),
+                    api.getItems({ limit: 8, sort: 'newest' }),
+                    api.getItems({ limit: 8, isFeatured: 'true' }),
+                    api.getItems({ limit: 8, isPopular: 'true' }),
                     api.getPublicSettings(),
                 ];
 
@@ -95,12 +102,51 @@ export default function Home() {
     };
 
 
+    const timerRef = useRef(null);
+
+    const resetTimer = () => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+        timerRef.current = setInterval(() => {
+            setActiveRec((prev) => (prev + 1) % 4);
+        }, 5000); // Otomatik geçiş süresi 5 saniyeye uzatıldı
+    };
+
     // Auto-slide effect for recommendations
     useEffect(() => {
-        const timer = setInterval(() => {
-            setActiveRec((prev) => (prev + 1) % 4);
-        }, 2000);
-        return () => clearInterval(timer);
+        resetTimer();
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, []);
+
+    const nextRec = () => {
+        setActiveRec((prev) => (prev + 1) % 4);
+        resetTimer();
+    };
+
+    const prevRec = () => {
+        setActiveRec((prev) => (prev - 1 + 4) % 4);
+        resetTimer();
+    };
+
+    // Yön tuşları (Klavye) ile geçiş desteği
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            const activeEl = document.activeElement;
+            // Eğer kullanıcı input veya textarea içindeyse tuşları algılama
+            if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+                return;
+            }
+            if (e.key === 'ArrowLeft') {
+                prevRec();
+            } else if (e.key === 'ArrowRight') {
+                nextRec();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
     const handleSearch = (e) => {
@@ -108,10 +154,6 @@ export default function Home() {
         const query = searchTerm.trim() || 'Telefon';
         navigate(`/arama?q=${encodeURIComponent(query)}`);
     };
-
-
-    const nextRec = () => setActiveRec((prev) => (prev + 1) % 4);
-    const prevRec = () => setActiveRec((prev) => (prev - 1 + 4) % 4);
 
     const [heroScale, setHeroScale] = useState(1);
     useEffect(() => {
@@ -202,7 +244,16 @@ export default function Home() {
 
                             {/* Recommended Vertical Slideshow - Always Visible Here */}
                             <div id="hero-recommended" className="flex absolute top-1/2 -translate-y-1/2 right-[40px] xl:right-[120px] w-[340px] h-[460px] items-center justify-center z-20">
-                                <div className="relative w-full h-full flex items-center justify-center">
+                                <div className="relative w-full h-full flex items-center justify-center group">
+                                    {/* Zarif Sol Yön Butonu */}
+                                    <button 
+                                        onClick={prevRec}
+                                        className="absolute -left-6 z-50 p-2.5 rounded-full bg-white/30 hover:bg-white/90 backdrop-blur-md border border-white/20 shadow-md text-stone-600 hover:text-stone-900 opacity-0 group-hover:opacity-100 transition-all duration-300 active:scale-95"
+                                        aria-label="Önceki Öneri"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+
                                     {ads.slice(0, 4).map((ad, index) => {
                                         if (index !== activeRec) return null;
                                         return (
@@ -228,6 +279,15 @@ export default function Home() {
                                             </div>
                                         );
                                     })}
+
+                                    {/* Zarif Sağ Yön Butonu */}
+                                    <button 
+                                        onClick={nextRec}
+                                        className="absolute -right-6 z-50 p-2.5 rounded-full bg-white/30 hover:bg-white/90 backdrop-blur-md border border-white/20 shadow-md text-stone-600 hover:text-stone-900 opacity-0 group-hover:opacity-100 transition-all duration-300 active:scale-95"
+                                        aria-label="Sonraki Öneri"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -300,7 +360,7 @@ export default function Home() {
                                 </div>
 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
-                                    {feedAds.slice(0, 8).map((ad) => (
+                                    {feedAds.slice(0, 4).map((ad) => (
                                         <Link
                                             to={`/ilan/${ad.id}`}
                                             key={ad.id}

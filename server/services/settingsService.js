@@ -6,7 +6,7 @@ const { prisma } = require('../config/database');
 
 let cache = null;
 let cacheTime = 0;
-const TTL = 30 * 1000; // 30 sn
+const TTL = 5 * 60 * 1000; // 5 dakika (30sn yerine)
 
 async function getAll(force = false) {
   const now = Date.now();
