@@ -19,6 +19,9 @@ const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 
 const app = express();
 
+// Nginx reverse proxy arkasında çalışırken gerçek client IP'yi al
+app.set('trust proxy', 1);
+
 // ============================================================
 // 1. GÜVENLİK MİDDLEWARE'LERİ
 // ============================================================
