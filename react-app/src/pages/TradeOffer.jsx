@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Zap, Check, Loader2, Package } from 'lucide-react';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
+import { getFullImageUrl } from '../utils/helpers';
 
 export default function TradeOffer() {
     const { id } = useParams();
@@ -77,7 +78,7 @@ export default function TradeOffer() {
 
                     <div className="bg-stone-50 rounded-2xl p-4 md:p-6 flex items-center gap-4">
                         <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl bg-stone-200 overflow-hidden shrink-0">
-                            {target.images?.[0]?.imageUrl && <img src={target.images[0].imageUrl.startsWith('http') ? target.images[0].imageUrl : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${target.images[0].imageUrl}`} alt={target.title} className="w-full h-full object-cover" />}
+                            {target.images?.[0]?.imageUrl && <img src={getFullImageUrl(target.images[0].imageUrl)} alt={target.title} className="w-full h-full object-cover" />}
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="text-[10px] font-black text-stone-400 uppercase tracking-widest">İSTEDİĞİN ÜRÜN</div>
@@ -97,7 +98,7 @@ export default function TradeOffer() {
                                 {myItems.map((it) => {
                                     const sel = selectedIds.includes(it.id);
                                     const img = it.images?.[0]?.imageUrl;
-                                    const full = img ? (img.startsWith('http') ? img : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${img}`) : null;
+                                    const full = img ? getFullImageUrl(img) : null;
                                     return (
                                         <button key={it.id} onClick={() => toggleSel(it.id)} type="button" className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all text-left ${sel ? 'border-amber-500 bg-amber-50' : 'border-stone-100 bg-white hover:border-stone-300'}`}>
                                             <div className="w-14 h-14 rounded-xl bg-stone-100 overflow-hidden shrink-0">
