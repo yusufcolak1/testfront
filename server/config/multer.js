@@ -35,20 +35,27 @@ const diskStorage = multer.diskStorage({
     cb(null, subDir);
   },
   filename: (req, file, cb) => {
-    // Güvenli dosya adı: uuid + orijinal uzantı
-    const ext = path.extname(file.originalname).toLowerCase();
+    // MIME türüne göre güvenli uzantı belirle
+    const mimeToExt = {
+      'image/jpeg': '.jpg', 'image/jpg': '.jpg',
+      'image/png': '.png', 'image/webp': '.webp',
+      'image/gif': '.gif', 'image/avif': '.avif',
+      'image/heic': '.jpg', 'image/heif': '.jpg', // sunucuda HEIC → .jpg olarak sakla
+      'image/tiff': '.jpg', 'image/bmp': '.jpg',
+    };
+    const extFromMime = mimeToExt[file.mimetype];
+    const extFromName = path.extname(file.originalname).toLowerCase();
+    const ext = extFromMime || extFromName || '.jpg';
     cb(null, `${uuidv4()}${ext}`);
   },
 });
 
-// İzin verilen MIME türleri
-const allowedMimeTypes = (process.env.ALLOWED_MIME_TYPES || 'image/jpeg,image/png,image/webp').split(',');
-
+// Tüm image/* türlerini kabul et (HEIC, HEIF, AVIF, kamera çekimleri dahil)
 const fileFilter = (req, file, cb) => {
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  if (file.mimetype && file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
-    cb(new Error(`Desteklenmeyen dosya türü: ${file.mimetype}. İzin verilenler: ${allowedMimeTypes.join(', ')}`), false);
+    cb(new Error(`Desteklenmeyen dosya türü: ${file.mimetype}. Sadece görsel dosyaları yüklenebilir.`), false);
   }
 };
 

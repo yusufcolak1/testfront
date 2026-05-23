@@ -77,12 +77,47 @@ export default function CreateAd() {
     };
     const upd = (k, v) => setForm((p) => ({ ...p, [k]: v }));
 
-    const onPickFiles = (e) => {
+    // HEIC / kamera formatlarını canvas üzerinden JPEG'e çevirir
+    const normalizeToJpeg = (file) => {
+        return new Promise((resolve) => {
+            // Zaten desteklenen formatlardaysa doğrudan döndür
+            if (['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                resolve(file);
+                return;
+            }
+            const objectUrl = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                URL.revokeObjectURL(objectUrl);
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) { resolve(file); return; }
+                        const safeName = file.name.replace(/\.[^.]+$/, '') || 'photo';
+                        resolve(new File([blob], `${safeName}.jpg`, { type: 'image/jpeg' }));
+                    },
+                    'image/jpeg',
+                    0.9
+                );
+            };
+            img.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                resolve(file); // dönüşüm başarısız olursa orijinali dene
+            };
+            img.src = objectUrl;
+        });
+    };
+
+    const onPickFiles = async (e) => {
         const list = Array.from(e.target.files || []);
         if (list.length === 0) return;
-        const newFiles = [...files, ...list].slice(0, 10);
+        const converted = await Promise.all(list.map(normalizeToJpeg));
+        const newFiles = [...files, ...converted].slice(0, 10);
         setFiles(newFiles);
-        // revoke old, generate new
         previews.forEach((url) => URL.revokeObjectURL(url));
         setPreviews(newFiles.map((f) => URL.createObjectURL(f)));
     };
