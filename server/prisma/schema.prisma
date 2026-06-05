@@ -1,7 +1,3 @@
-// ============================================
-// TAKASON - Prisma Schema (PostgreSQL - Supabase)
-// ============================================
-
 generator client {
   provider      = "prisma-client-js"
   output        = "./generated-client"
@@ -14,61 +10,57 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// ============================================
-// USER & PROFILE
-// ============================================
-
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         String   @default("USER") // USER, ADMIN, MODERATOR
-  status       String   @default("ACTIVE") // ACTIVE, BANNED, SUSPENDED
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  profile        Profile?
-  items          Item[]
-  sentTrades     Trade[]           @relation("SentTrades")
-  receivedTrades Trade[]           @relation("ReceivedTrades")
-  chatRooms      ChatRoom[]
-  messages       Message[]
-  favorites      Favorite[]
-  addresses      Address[]
-  notifications  Notification[]
-  interactions   UserInteraction[]
-  questions      ItemQuestion[]
-  comments       Comment[]
-  supportRequests SupportRequest[]
+  id                                         String            @id @default(uuid())
+  email                                      String            @unique
+  passwordHash                               String            @map("password_hash")
+  role                                       String            @default("USER")
+  status                                     String            @default("ACTIVE")
+  createdAt                                  DateTime          @default(now()) @map("created_at")
+  updatedAt                                  DateTime          @updatedAt @map("updated_at")
+  addresses                                  Address[]
+  comments                                   Comment[]
+  favorites                                  Favorite[]
+  questions                                  ItemQuestion[]
+  item_reviews                               item_reviews[]
+  items                                      Item[]
+  messages                                   Message[]
+  notifications                              Notification[]
+  profile                                    Profile?
+  supportRequests                            SupportRequest[]
+  receivedTrades                             Trade[]           @relation("ReceivedTrades")
+  sentTrades                                 Trade[]           @relation("SentTrades")
+  interactions                               UserInteraction[]
+  user_reviews_user_reviews_author_idTousers user_reviews[]    @relation("user_reviews_author_idTousers")
+  user_reviews_user_reviews_user_idTousers   user_reviews[]    @relation("user_reviews_user_idTousers")
+  chatRooms                                  ChatRoom[]        @relation("ChatRoomToUser")
 
   @@map("users")
 }
 
 model Profile {
-  id               String   @id @default(uuid())
-  userId           String   @unique @map("user_id")
-  firstName        String   @map("first_name")
-  lastName         String   @map("last_name")
+  id               String    @id @default(uuid())
+  userId           String    @unique @map("user_id")
+  firstName        String    @map("first_name")
+  lastName         String    @map("last_name")
   phone            String?
   city             String?
-  country          String?  @default("Turkey")
+  country          String?   @default("Turkey")
   bio              String?
-  avatarUrl        String?  @map("avatar_url")
-  rating           Float    @default(0.0)
-  totalTrades      Int      @default(0) @map("total_trades")
-  score            Int      @default(0)
-  swapsCompleted   Int      @default(0) @map("swaps_completed")
-  cancellationRate Float    @default(0.0) @map("cancellation_rate")
+  avatarUrl        String?   @map("avatar_url")
+  rating           Float     @default(0.0)
+  totalTrades      Int       @default(0) @map("total_trades")
+  score            Int       @default(0)
+  swapsCompleted   Int       @default(0) @map("swaps_completed")
+  cancellationRate Float     @default(0.0) @map("cancellation_rate")
   medal            String?
-  isPremium        Boolean  @default(false) @map("is_premium")
+  isPremium        Boolean   @default(false) @map("is_premium")
   premiumUntil     DateTime? @map("premium_until")
-  // Konum (algoritma için)
-  latitude         Float?   @map("latitude")
-  longitude        Float?   @map("longitude")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  latitude         Float?    @map("latitude")
+  longitude        Float?    @map("longitude")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("profiles")
 }
@@ -78,74 +70,66 @@ model Address {
   userId    String   @map("user_id")
   title     String
   address   String
-  type      String   @default("HOME") // HOME, WORK, OTHER
+  type      String   @default("HOME")
   city      String?
   isDefault Boolean  @default(false) @map("is_default")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("addresses")
 }
 
-// ============================================
-// CATEGORY & ITEM
-// ============================================
-
 model Category {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  slug        String   @unique
+  id          String     @id @default(uuid())
+  name        String     @unique
+  slug        String     @unique
   description String?
   icon        String?
-  parentId    String?  @map("parent_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryHierarchy")
-  items    Item[]
+  parentId    String?    @map("parent_id")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  items       Item[]
 
   @@map("categories")
 }
 
 model Item {
-  id               String      @id @default(uuid())
-  userId           String      @map("user_id")
-  categoryId       String      @map("category_id")
+  id               String            @id @default(uuid())
+  userId           String            @map("user_id")
+  categoryId       String            @map("category_id")
   title            String
   description      String
-  condition        String      // NEW, LIKE_NEW, GOOD, FAIR, POOR
-  status           String      @default("DRAFT") // DRAFT, ACTIVE, SOLD, ARCHIVED, DELETED
+  condition        String
+  status           String            @default("DRAFT")
   location         String?
-  estimatedValue   Float?      @map("estimated_value")
-  swapFor          String?     @map("swap_for")
-  // Etiketler ve takas tercihleri (JSON string)
-  tags             String?     // örn: '["telefon","samsung","elektronik"]'
-  wantedCategories String?     @map("wanted_categories") // örn: '["Elektronik","Kitap"]'
-  // Konum koordinatları (algoritma için)
-  latitude         Float?      @map("latitude")
-  longitude        Float?      @map("longitude")
-  tag              String?     // NEW, FEATURED, POPULAR
-  isFeatured       Boolean     @default(false) @map("is_featured")
-  isPopular        Boolean     @default(false) @map("is_popular")
-  viewCount        Int         @default(0) @map("view_count")
-  favoriteCount    Int         @default(0) @map("favorite_count")
-  messageCount     Int         @default(0) @map("message_count")
-  qualityScore     Float       @default(0.0) @map("quality_score")
-  createdAt        DateTime    @default(now()) @map("created_at")
-  updatedAt        DateTime    @updatedAt @map("updated_at")
-
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category     Category          @relation(fields: [categoryId], references: [id])
-  images       ItemImage[]
-  tradeItems   TradeItem[]
-  favorites    Favorite[]
-  interactions UserInteraction[]
-  questions    ItemQuestion[]
-  comments     Comment[]
+  estimatedValue   Float?            @map("estimated_value")
+  swapFor          String?           @map("swap_for")
+  tags             String?
+  wantedCategories String?           @map("wanted_categories")
+  latitude         Float?            @map("latitude")
+  longitude        Float?            @map("longitude")
+  tag              String?
+  isFeatured       Boolean           @default(false) @map("is_featured")
+  isPopular        Boolean           @default(false) @map("is_popular")
+  viewCount        Int               @default(0) @map("view_count")
+  favoriteCount    Int               @default(0) @map("favorite_count")
+  messageCount     Int               @default(0) @map("message_count")
+  qualityScore     Float             @default(0.0) @map("quality_score")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  comments         Comment[]
+  favorites        Favorite[]
+  images           ItemImage[]
+  questions        ItemQuestion[]
+  item_reviews     item_reviews[]
+  category         Category          @relation(fields: [categoryId], references: [id])
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tradeItems       TradeItem[]
+  interactions     UserInteraction[]
 
   @@index([userId])
   @@index([categoryId])
@@ -164,8 +148,7 @@ model ItemImage {
   displayOrder Int      @default(0) @map("display_order")
   isPrimary    Boolean  @default(false) @map("is_primary")
   createdAt    DateTime @default(now()) @map("created_at")
-
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([itemId])
   @@map("item_images")
@@ -179,9 +162,8 @@ model ItemQuestion {
   answer    String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([itemId])
   @@index([userId])
@@ -189,22 +171,17 @@ model ItemQuestion {
   @@map("item_questions")
 }
 
-// ============================================
-// TRADE
-// ============================================
-
 model Trade {
   id         String      @id @default(uuid())
   senderId   String      @map("sender_id")
   receiverId String      @map("receiver_id")
-  status     String      @default("PENDING") // PENDING, ACCEPTED, REJECTED, COMPLETED, CANCELLED
+  status     String      @default("PENDING")
   message    String?
   createdAt  DateTime    @default(now()) @map("created_at")
   updatedAt  DateTime    @updatedAt @map("updated_at")
-
-  sender     User        @relation("SentTrades", fields: [senderId], references: [id])
-  receiver   User        @relation("ReceivedTrades", fields: [receiverId], references: [id])
   tradeItems TradeItem[]
+  receiver   User        @relation("ReceivedTrades", fields: [receiverId], references: [id])
+  sender     User        @relation("SentTrades", fields: [senderId], references: [id])
 
   @@index([senderId])
   @@index([receiverId])
@@ -216,11 +193,10 @@ model TradeItem {
   id        String   @id @default(uuid())
   tradeId   String   @map("trade_id")
   itemId    String   @map("item_id")
-  side      String   // OFFER, REQUEST
+  side      String
   createdAt DateTime @default(now()) @map("created_at")
-
-  trade Trade @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  item  Item  @relation(fields: [itemId], references: [id])
+  item      Item     @relation(fields: [itemId], references: [id])
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
 
   @@unique([tradeId, itemId])
   @@index([tradeId])
@@ -228,18 +204,13 @@ model TradeItem {
   @@map("trade_items")
 }
 
-// ============================================
-// CHAT
-// ============================================
-
 model ChatRoom {
   id        String    @id @default(uuid())
   userIds   String    @map("user_ids")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
-
-  users    User[]
-  messages Message[]
+  messages  Message[]
+  users     User[]    @relation("ChatRoomToUser")
 
   @@map("chat_rooms")
 }
@@ -252,37 +223,27 @@ model Message {
   type       String   @default("TEXT")
   isRead     Boolean  @default(false) @map("is_read")
   createdAt  DateTime @default(now()) @map("created_at")
-
-  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
-  sender   User     @relation(fields: [senderId], references: [id])
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  sender     User     @relation(fields: [senderId], references: [id])
 
   @@index([chatRoomId])
   @@index([senderId])
   @@map("messages")
 }
 
-// ============================================
-// FAVORITE
-// ============================================
-
 model Favorite {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   itemId    String   @map("item_id")
   createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, itemId])
   @@index([userId])
   @@index([itemId])
   @@map("favorites")
 }
-
-// ============================================
-// CONTENT (CMS-like - admin yönetir)
-// ============================================
 
 model FAQ {
   id        String   @id @default(uuid())
@@ -313,7 +274,7 @@ model HelpCategory {
 model PremiumPerk {
   id          String   @id @default(uuid())
   title       String
-  value       String?  // örn. "AKTİF", "3/10"
+  value       String?
   description String
   icon        String   @default("Sparkles")
   color       String   @default("text-amber-500")
@@ -329,9 +290,9 @@ model PremiumPlan {
   id          String   @id @default(uuid())
   name        String
   price       Float
-  period      String   @default("MONTHLY") // MONTHLY, YEARLY
+  period      String   @default("MONTHLY")
   description String?
-  features    String   // JSON-encoded string array
+  features    String
   order       Int      @default(0)
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -353,16 +314,12 @@ model SafeSwapStep {
   @@map("safe_swap_steps")
 }
 
-// ============================================
-// SETTINGS (key/value, admin paneli ile yönetilir)
-// ============================================
-
 model SiteSetting {
   id          String   @id @default(uuid())
   key         String   @unique
   value       String
-  type        String   @default("STRING") // STRING, JSON, BOOLEAN, NUMBER
-  group       String   @default("general") // general, smtp, sms, cloudinary, premium, theme
+  type        String   @default("STRING")
+  group       String   @default("general")
   description String?
   isPublic    Boolean  @default(false) @map("is_public")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -372,51 +329,36 @@ model SiteSetting {
   @@map("site_settings")
 }
 
-// ============================================
-// NOTIFICATION
-// ============================================
-
 model Notification {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  type      String   @default("SYSTEM") // SYSTEM, TRADE, MESSAGE, INFO
+  type      String   @default("SYSTEM")
   title     String
   body      String
   link      String?
   isRead    Boolean  @default(false) @map("is_read")
   createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("notifications")
 }
 
-// ============================================
-// USER INTERACTION (Algoritma için davranış logu)
-// ============================================
-
 model UserInteraction {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   itemId    String   @map("item_id")
-  // VIEW=1, CLICK=3, FAVORITE=5, MESSAGE=8, SKIP=-2
-  type      String   // VIEW, CLICK, FAVORITE, MESSAGE, SKIP
+  type      String
   weight    Int      @default(1)
   createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([itemId])
   @@index([userId, createdAt])
   @@map("user_interactions")
 }
-
-// ============================================
-// COMMENTS (Keşfet/Discover için genel yorumlar)
-// ============================================
 
 model Comment {
   id        String   @id @default(uuid())
@@ -425,9 +367,8 @@ model Comment {
   content   String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([itemId])
   @@index([userId])
@@ -435,22 +376,49 @@ model Comment {
   @@map("comments")
 }
 
-// ============================================
-// SUPPORT REQUESTS (Destek Formu)
-// ============================================
-
 model SupportRequest {
   id        String   @id @default(uuid())
-  userId    String?  @map("user_id") // Giriş yapmışsa
+  userId    String?  @map("user_id")
   name      String
   email     String
   subject   String
   message   String
-  status    String   @default("PENDING") // PENDING, IN_PROGRESS, RESOLVED, CLOSED
+  status    String   @default("PENDING")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@map("support_requests")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model item_reviews {
+  id         String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  author_id  String
+  item_id    String
+  score      Int
+  comment    String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      User      @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  items      Item      @relation(fields: [item_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([author_id, item_id])
+  @@index([author_id], map: "idx_item_reviews_author_id")
+  @@index([item_id], map: "idx_item_reviews_item_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_reviews {
+  id                                  String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  author_id                           String
+  user_id                             String
+  score                               Int
+  comment                             String?
+  created_at                          DateTime? @default(now()) @db.Timestamptz(6)
+  users_user_reviews_author_idTousers User      @relation("user_reviews_author_idTousers", fields: [author_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_user_reviews_user_idTousers   User      @relation("user_reviews_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([author_id, user_id])
+  @@index([author_id], map: "idx_user_reviews_author_id")
+  @@index([user_id], map: "idx_user_reviews_user_id")
 }
