@@ -25,12 +25,14 @@ services:
         sync: false   # Supabase → Settings → Database → Direct Connection (port 5432)
 
       # -----------------------------------------------
-      # Supabase Storage - Medya dosyaları için (Manuel)
+      # Supabase Storage + API (Manuel)
       # -----------------------------------------------
       - key: SUPABASE_URL
         sync: false   # Supabase → Settings → API → Project URL
       - key: SUPABASE_SERVICE_KEY
         sync: false   # Supabase → Settings → API → service_role (gizli tut!)
+      - key: SUPABASE_ANON_KEY
+        sync: false   # Supabase → Settings → API → anon public key
 
       # -----------------------------------------------
       # JWT (Render otomatik üretir)
@@ -45,8 +47,7 @@ services:
         value: 30d
 
       # -----------------------------------------------
-      # CORS - Frontend URL'leri buraya ekle
-      # yourdomain.com kısmını kendi domaininizle değiştir
+      # CORS - Frontend domain adresleri
       # -----------------------------------------------
       - key: ALLOWED_ORIGINS
         value: https://takason.com.tr,https://www.takason.com.tr
@@ -76,11 +77,5 @@ services:
         sync: false   # Cloudinary Dashboard → Account Details
       - key: CLOUDINARY_API_SECRET
         sync: false   # Cloudinary Dashboard → Account Details
-
-      # -----------------------------------------------
-      # Supabase Anon Key (Opsiyonel)
-      # -----------------------------------------------
-      - key: SUPABASE_ANON_KEY
-        sync: false   # Supabase → Settings → API → anon public key
 
     healthCheckPath: /api/health
