@@ -1,12 +1,70 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Phone, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 export default function LoginModal({ isOpen, onClose }) {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login, register } = useAuth();
+  const { login, register, socialLogin } = useAuth();
+  const { settings } = useSettings();
+
+  const googleClientId = settings['auth.google.clientId'] || '1058223630653-5v140c8p2v1qob75v42kocp4a8b7952p.apps.googleusercontent.com';
+
+  const handleGoogleLogin = () => {
+    if (!window.google) {
+      setError('Google Giriş servisi henüz yüklenmedi. Lütfen sayfayı yenileyip tekrar deneyin.');
+      return;
+    }
+
+    try {
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: googleClientId,
+        scope: 'email profile openid',
+        callback: async (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            setLoading(true);
+            setError('');
+            try {
+              const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+              });
+              const userInfo = await userInfoRes.json();
+
+              if (!userInfo.email) {
+                throw new Error('Google hesabınızdan e-posta adresi alınamadı.');
+              }
+
+              const result = await socialLogin({
+                email: userInfo.email,
+                firstName: userInfo.given_name || 'Google',
+                lastName: userInfo.family_name || 'Kullanıcısı',
+                provider: 'google',
+                providerId: userInfo.sub,
+              });
+
+              if (result.success) {
+                onClose();
+              } else {
+                setError(result.message || 'Google ile giriş başarısız.');
+              }
+            } catch (err) {
+              setError(err.message || 'Google bilgileri alınırken hata oluştu.');
+            } finally {
+              setLoading(false);
+            }
+          }
+        },
+        error_callback: (err) => {
+          setError('Google girişi sırasında bağlantı hatası oluştu.');
+        }
+      });
+      client.requestAccessToken();
+    } catch (err) {
+      setError('Google Giriş başlatılamadı: ' + err.message);
+    }
+  };
 
   const [loginData, setLoginData] = useState({
     email: '',
@@ -138,7 +196,7 @@ export default function LoginModal({ isOpen, onClose }) {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => alert('Google girişi yakında!')}
+                onClick={handleGoogleLogin}
                 className="flex items-center justify-center gap-2 px-4 py-3 border border-stone-100 rounded-xl hover:bg-stone-50 transition-all group"
               >
                 <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">

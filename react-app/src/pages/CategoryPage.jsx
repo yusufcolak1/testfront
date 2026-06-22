@@ -15,6 +15,13 @@ export default function CategoryPage() {
     const { isAuthenticated, openLoginModal } = useAuth();
     const [categoryName, setCategoryName] = useState(slug ? slug.charAt(0).toUpperCase() + slug.slice(1).replace(/-/g, ' ') : 'Kategori');
 
+    const [appliedFilters, setAppliedFilters] = useState({
+        location: 'Tümü',
+        condition: 'Tümü',
+        swapType: 'Tümü',
+        time: 'Tümü'
+    });
+
     const [filters, setFilters] = useState({
         location: 'Tümü',
         condition: 'Tümü',
@@ -32,15 +39,64 @@ export default function CategoryPage() {
                 const matched = cats.data?.find(c => c.slug === slug);
                 if (matched) setCategoryName(matched.name);
 
-                const r = await api.getItems({ categorySlug: slug, limit: 20, page });
+                const params = { categorySlug: slug, limit: 20, page };
+                if (appliedFilters.location !== 'Tümü') {
+                    params.city = appliedFilters.location;
+                }
+                if (appliedFilters.condition !== 'Tümü') {
+                    const conditionMap = {
+                        'Sıfır': 'NEW',
+                        'Yeni Gibi': 'LIKE_NEW',
+                        'Az Kullanılmış': 'GOOD',
+                        'Yorgun': 'FAIR'
+                    };
+                    params.condition = conditionMap[appliedFilters.condition];
+                }
+
+                const r = await api.getItems(params);
                 if (sc) return;
-                setCategoryProducts(r.data || []);
+
+                let items = r.data || [];
+
+                // Frontend filters for swapType
+                if (appliedFilters.swapType !== 'Tümü') {
+                    items = items.filter(product => {
+                        const swapForLower = (product.swapFor || '').toLowerCase();
+                        if (appliedFilters.swapType === 'Sadece Eşya') {
+                            return !swapForLower.includes('nakit') && !swapForLower.includes('para') && !swapForLower.includes('tl') && !swapForLower.includes('₺');
+                        } else if (appliedFilters.swapType === 'Eşya + Nakit') {
+                            return swapForLower.includes('nakit') || swapForLower.includes('üst') || swapForLower.includes('para') || swapForLower.includes('tl') || swapForLower.includes('₺');
+                        } else if (appliedFilters.swapType === 'Üstüne Alırım') {
+                            return swapForLower.includes('üst') || swapForLower.includes('alırım');
+                        }
+                        return true;
+                    });
+                }
+
+                // Frontend filters for time
+                if (appliedFilters.time !== 'Tümü') {
+                    const now = new Date();
+                    items = items.filter(product => {
+                        const createdAt = new Date(product.createdAt);
+                        const diffMs = now - createdAt;
+                        if (appliedFilters.time === '24 Saat') {
+                            return diffMs <= 24 * 60 * 60 * 1000;
+                        } else if (appliedFilters.time === 'Bu Hafta') {
+                            return diffMs <= 7 * 24 * 60 * 60 * 1000;
+                        } else if (appliedFilters.time === 'Bu Ay') {
+                            return diffMs <= 30 * 24 * 60 * 60 * 1000;
+                        }
+                        return true;
+                    });
+                }
+
+                setCategoryProducts(items);
                 if (r.pagination) setPagination(r.pagination);
             } catch (e) { console.error(e); }
             finally { if (!sc) setLoading(false); }
         })();
         return () => { sc = true; };
-    }, [slug, page]);
+    }, [slug, page, appliedFilters]);
 
     const handlePageChange = (p) => {
         setPage(p);
@@ -108,13 +164,21 @@ export default function CategoryPage() {
                             </div>
                             <div className="flex items-center gap-4 w-full md:w-auto">
                                 <button
-                                    onClick={() => setFilters({ location: 'Tümü', condition: 'Tümü', swapType: 'Tümü', time: 'Tümü' })}
+                                    onClick={() => {
+                                        const reset = { location: 'Tümü', condition: 'Tümü', swapType: 'Tümü', time: 'Tümü' };
+                                        setFilters(reset);
+                                        setAppliedFilters(reset);
+                                        setIsFilterOpen(false);
+                                    }}
                                     className="px-6 py-3 text-stone-500 hover:text-stone-900 font-black text-[9px] tracking-widest uppercase transition-colors"
                                 >
                                     Sıfırla
                                 </button>
                                 <button
-                                    onClick={() => setIsFilterOpen(false)}
+                                    onClick={() => {
+                                        setAppliedFilters({ ...filters });
+                                        setIsFilterOpen(false);
+                                    }}
                                     className="flex-1 md:flex-none px-12 py-4 bg-amber-500 text-stone-900 rounded-2xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:scale-105 transition-all"
                                 >
                                     UYGULA

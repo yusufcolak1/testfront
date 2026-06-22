@@ -49,7 +49,7 @@ async function getPublic() {
   const all = await getAll();
   const out = {};
   for (const [k, v] of Object.entries(all)) {
-    if (v.isPublic) out[k] = v.value;
+    if (v.isPublic || k === 'auth.google.clientId') out[k] = v.value;
   }
   return out;
 }

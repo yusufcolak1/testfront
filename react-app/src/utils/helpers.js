@@ -11,7 +11,7 @@ const UPLOAD_BASE = RAW_API_URL.startsWith('/') ? '' : RAW_API_URL;
  * Otherwise, builds an upload-relative URL (never prefixed with /api).
  */
 export const getFullImageUrl = (path) => {
-  if (!path) return 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400';
+  if (!path) return 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400';
   if (path.startsWith('http')) return path;
 
   let cleanPath = path;

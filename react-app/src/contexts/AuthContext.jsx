@@ -76,6 +76,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const socialLogin = async (socialData) => {
+    try {
+      const response = await api.socialLogin(socialData);
+      if (response.success && response.data?.user) {
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+        closeLoginModal();
+        return { success: true };
+      }
+      return { success: false, message: response.message || 'Sosyal giriş başarısız' };
+    } catch (error) {
+      return { success: false, message: error.message || 'Sosyal giriş başarısız' };
+    }
+  };
+
   const logout = async () => {
     try {
       await api.logout();
@@ -99,6 +114,7 @@ export const AuthProvider = ({ children }) => {
     closeLoginModal,
     login,
     register,
+    socialLogin,
     logout,
     checkAuth,
   };

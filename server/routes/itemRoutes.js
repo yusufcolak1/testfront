@@ -42,9 +42,18 @@ router.post('/:id/images', authenticate, handleUploadMultiple, asyncHandler(asyn
   if (!req.files || req.files.length === 0) throw new AppError('Hiç fotoğraf yüklenmedi.', 400);
   const totalImages = item.images.length + req.files.length;
   if (totalImages > 10) throw new AppError('Bir ilanda en fazla 10 fotoğraf olabilir.', 400);
-  const created = await Promise.all(req.files.map((f, i) =>
-    prisma.itemImage.create({ data: { itemId: req.params.id, imageUrl: `/uploads/${f.filename}`, order: item.images.length + i } })
-  ));
+  
+  const created = await Promise.all(req.files.map((f, i) => {
+    const normalizedPath = f.path.replace(/\\/g, '/');
+    const imageUrl = normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`;
+    return prisma.itemImage.create({
+      data: {
+        itemId: req.params.id,
+        imageUrl: imageUrl,
+        displayOrder: item.images.length + i
+      }
+    });
+  }));
   res.json({ success: true, data: created });
 }));
 

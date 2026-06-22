@@ -13,6 +13,10 @@ export default function ListingPage({ title: initialTitle }) {
     const [products, setProducts] = useState([]);
     const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
     const [page, setPage] = useState(1);
+    const [appliedFilters, setAppliedFilters] = useState({
+        konum: 'Tümü', durum: 'Tümü', takas: 'Tümü', tarih: 'Tümü'
+    });
+
     const [filters, setFilters] = useState({
         konum: 'Tümü', durum: 'Tümü', takas: 'Tümü', tarih: 'Tümü'
     });
@@ -33,15 +37,63 @@ export default function ListingPage({ title: initialTitle }) {
                     setTitle("Son İlanlar");
                 }
 
+                if (appliedFilters.konum !== 'Tümü') {
+                    params.city = appliedFilters.konum;
+                }
+                if (appliedFilters.durum !== 'Tümü') {
+                    const conditionMap = {
+                        'Sıfır': 'NEW',
+                        'Yeni Gibi': 'LIKE_NEW',
+                        'Az Kullanılmış': 'GOOD',
+                        'Yorgun': 'FAIR'
+                    };
+                    params.condition = conditionMap[appliedFilters.durum];
+                }
+
                 const r = await api.getItems(params);
                 if (sc) return;
-                setProducts(r.data || []);
+
+                let items = r.data || [];
+
+                // Frontend filters for swapType (takas)
+                if (appliedFilters.takas !== 'Tümü') {
+                    items = items.filter(product => {
+                        const swapForLower = (product.swapFor || '').toLowerCase();
+                        if (appliedFilters.takas === 'Sadece Eşya') {
+                            return !swapForLower.includes('nakit') && !swapForLower.includes('para') && !swapForLower.includes('tl') && !swapForLower.includes('₺');
+                        } else if (appliedFilters.takas === 'Eşya + Nakit') {
+                            return swapForLower.includes('nakit') || swapForLower.includes('üst') || swapForLower.includes('para') || swapForLower.includes('tl') || swapForLower.includes('₺');
+                        } else if (appliedFilters.takas === 'Üstüne Alırım') {
+                            return swapForLower.includes('üst') || swapForLower.includes('alırım');
+                        }
+                        return true;
+                    });
+                }
+
+                // Frontend filters for time (tarih)
+                if (appliedFilters.tarih !== 'Tümü') {
+                    const now = new Date();
+                    items = items.filter(product => {
+                        const createdAt = new Date(product.createdAt);
+                        const diffMs = now - createdAt;
+                        if (appliedFilters.tarih === '24 Saat') {
+                            return diffMs <= 24 * 60 * 60 * 1000;
+                        } else if (appliedFilters.tarih === 'Bu Hafta') {
+                            return diffMs <= 7 * 24 * 60 * 60 * 1000;
+                        } else if (appliedFilters.tarih === 'Bu Ay') {
+                            return diffMs <= 30 * 24 * 60 * 60 * 1000;
+                        }
+                        return true;
+                    });
+                }
+
+                setProducts(items);
                 if (r.pagination) setPagination(r.pagination);
             } catch (e) { console.error(e); }
             finally { if (!sc) setLoading(false); }
         })();
         return () => { sc = true; };
-    }, [location.pathname, page]);
+    }, [location.pathname, page, appliedFilters]);
 
     const handlePageChange = (p) => {
         setPage(p);
@@ -148,13 +200,21 @@ export default function ListingPage({ title: initialTitle }) {
                             </div>
                             <div className="flex items-center gap-4 w-full md:w-auto">
                                 <button
-                                    onClick={() => setFilters({ konum: 'Tümü', durum: 'Tümü', takas: 'Tümü', tarih: 'Tümü' })}
+                                    onClick={() => {
+                                        const reset = { konum: 'Tümü', durum: 'Tümü', takas: 'Tümü', tarih: 'Tümü' };
+                                        setFilters(reset);
+                                        setAppliedFilters(reset);
+                                        setIsFilterOpen(false);
+                                    }}
                                     className="px-6 py-3 text-stone-500 hover:text-stone-900 font-black text-[9px] tracking-widest uppercase transition-colors"
                                 >
                                     Sıfırla
                                 </button>
                                 <button
-                                    onClick={() => setIsFilterOpen(false)}
+                                    onClick={() => {
+                                        setAppliedFilters({ ...filters });
+                                        setIsFilterOpen(false);
+                                    }}
                                     className="flex-1 md:flex-none px-12 py-4 bg-amber-500 text-stone-900 rounded-2xl font-black text-[10px] tracking-widest uppercase shadow-xl hover:scale-105 transition-all"
                                 >
                                     FİLTRELERİ UYGULA

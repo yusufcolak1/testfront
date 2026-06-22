@@ -45,6 +45,7 @@ const itemQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).optional(),
   limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   categoryId: z.string().uuid().optional(),
+  categorySlug: z.string().optional(),
   condition: z.enum(['NEW', 'LIKE_NEW', 'GOOD', 'FAIR', 'POOR']).optional(),
   city: z.string().optional(),
   minValue: z.string().regex(/^\d+$/).transform(Number).optional(),

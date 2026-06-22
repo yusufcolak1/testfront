@@ -216,6 +216,34 @@ const searchScore = (item, searchString) => {
   return matchesAny ? score : 0;
 };
 
+// Kategori ve alt kategorilerinin ID listesini döndürür
+const getCategoryDescendantIds = async (categoryIdOrSlug) => {
+  const category = await prisma.category.findFirst({
+    where: typeof categoryIdOrSlug === 'string' && categoryIdOrSlug.length === 36
+      ? { id: categoryIdOrSlug }
+      : { slug: categoryIdOrSlug },
+    select: { id: true }
+  });
+
+  if (!category) return [];
+
+  const ids = [category.id];
+  
+  const fetchChildren = async (parentId) => {
+    const children = await prisma.category.findMany({
+      where: { parentId },
+      select: { id: true }
+    });
+    for (const child of children) {
+      ids.push(child.id);
+      await fetchChildren(child.id);
+    }
+  };
+
+  await fetchChildren(category.id);
+  return ids;
+};
+
 // ============================================================
 // İlanları Listele (Filtreleme + Sayfalama)
 // ============================================================
@@ -227,11 +255,14 @@ const getItems = async (query, userId = null) => {
     status: 'ACTIVE', // Sadece aktif ilanlar
   };
 
-  if (query.categoryId) where.categoryId = query.categoryId;
+  if (query.categoryId || query.categorySlug) {
+    const categoryIds = await getCategoryDescendantIds(query.categoryId || query.categorySlug);
+    where.categoryId = { in: categoryIds };
+  }
   if (query.condition) where.condition = query.condition;
   if (query.city) where.location = { contains: query.city };
-  if (query.isFeatured !== undefined) where.isFeatured = query.isFeatured === 'true';
-  if (query.isPopular !== undefined) where.isPopular = query.isPopular === 'true';
+  if (query.isFeatured !== undefined) where.isFeatured = query.isFeatured === 'true' || query.isFeatured === true;
+  if (query.isPopular !== undefined) where.isPopular = query.isPopular === 'true' || query.isPopular === true;
   if (query.minValue || query.maxValue) {
     where.estimatedValue = {
       ...(query.minValue && { gte: Number(query.minValue) }),

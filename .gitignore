@@ -2,8 +2,8 @@
 node_modules/
 !server/node_modules/.prisma/
 .env
-.env.production
 .env.local
+*.env.production
 .DS_Store
 *.log
 Thumbs.db
@@ -18,8 +18,11 @@ server/uploads/*
 !server/uploads/.gitkeep
 server/logs/
 server/prisma/*.db
-!server/prisma/dev.db
+server/prisma/generated-client/
 server/prisma/*.db-journal
+server/scratch/
+server/scripts/migrate-sqlite-to-pg-v2.js
+# (db-journal already included above)
 
 # Frontend Specific
 react-app/node_modules/
