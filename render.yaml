@@ -49,7 +49,7 @@ services:
       # yourdomain.com kısmını kendi domaininizle değiştir
       # -----------------------------------------------
       - key: ALLOWED_ORIGINS
-        value: https://yourdomain.com,https://www.yourdomain.com
+        value: https://takason.com.tr,https://www.takason.com.tr
 
       # -----------------------------------------------
       # Rate Limiting
@@ -66,5 +66,21 @@ services:
         value: 5242880
       - key: ALLOWED_FILE_TYPES
         value: image/jpeg,image/png,image/webp,image/gif
+
+      # -----------------------------------------------
+      # Cloudinary - Resim yükleme (Manuel olarak ekle)
+      # -----------------------------------------------
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false   # Cloudinary Dashboard → Account Details
+      - key: CLOUDINARY_API_KEY
+        sync: false   # Cloudinary Dashboard → Account Details
+      - key: CLOUDINARY_API_SECRET
+        sync: false   # Cloudinary Dashboard → Account Details
+
+      # -----------------------------------------------
+      # Supabase Anon Key (Opsiyonel)
+      # -----------------------------------------------
+      - key: SUPABASE_ANON_KEY
+        sync: false   # Supabase → Settings → API → anon public key
 
     healthCheckPath: /api/health
